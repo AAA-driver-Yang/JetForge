@@ -618,7 +618,11 @@ namespace JetForge.Core
             // 没装（install 为 null / 没解出来）时这一行不改任何数，老存档逐位相同。
             bool fromPart = install != null && install.Present;
             // 零件求一次，恢复/流量全用这一份；没装或没解出来就退回发动机自带口径。
-            IntakeSolution partSol = fromPart ? install.ToSolution(alt, mach) : null;
+            // 同时把发动机自己那张面的面积与面马赫传进去：装在超大零件上时流量在这里封顶（§284），
+            // 否则"进气道做多大就吃多少"，推力会随着外形一路涨上去。
+            IntakeSolution partSol = fromPart
+                ? install.ToSolution(alt, mach, d.EngineFaceArea(), d.EngineFaceMach(), double.NaN)
+                : null;
             if (partSol != null && partSol.Valid)
             {
                 inl.Tpr = partSol.Tpr;

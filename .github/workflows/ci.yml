@@ -1,0 +1,26 @@
+name: CI
+
+# 这个工作流只跑"不需要游戏"的那部分：十六道闸门 + 回归（84 段、1817 条记号）。
+# 实机自检、出包、发布闸门都要真的 KSP 安装目录，GitHub 的 runner 上没有，
+# 那三步在本地 `tools/run_tests.sh`（不带 --ci）里跑，见 tools/README.md。
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gates:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 装 .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          # 测试工程是 net10.0（插件本体仍是 net472，那部分在这里编不了，见上）
+          dotnet-version: '10.0.x'
+
+      - name: 闸门与回归
+        shell: bash
+        run: bash tools/run_tests.sh --ci

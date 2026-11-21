@@ -45,6 +45,16 @@ namespace JetForge.Core
         /// <summary>老口径给设计点用的流量：喉道按 **来流总压** 算，缺省逐位与旧代码相同。</summary>
         public double LegacyMassFlow;
 
+        /// <summary>
+        /// 这个流量是不是被"发动机进口面"削过（§284）。
+        /// 独立进气道做得比发动机进口还大时，多出来的气只能在唇口溢流——
+        /// 这个标志让界面能说清楚"你把它做大了，但你并没有因此多吃到空气"。
+        /// </summary>
+        public bool FlowCappedByEngineFace;
+
+        /// <summary>上面那个上限是多少（kg/s）。0 = 这次没算上限（调用方没给发动机面）。</summary>
+        public double EngineFaceCapMassFlow;
+
         public double ThroatMargin;     // 1 - Required/ThroatCap
         public bool ThroatChoked;
         public bool Spilling;
@@ -88,6 +98,22 @@ namespace JetForge.Core
         /// <summary>面马赫的物理范围。低于 0.2 说明玩家把"减速增压"调成了"堵住"。</summary>
         public const double FaceMachMin = 0.20;
         public const double FaceMachMax = 1.00;
+
+        /// <summary>
+        /// 这台发动机自己那张面想把气减到多少马赫：填了 `FaceMachDesign` 就用它，
+        /// 没填按型式给缺省，再夹进可解区间。
+        ///
+        /// 抽成一个函数是因为"发动机这一面能通过多少流量"有两处要问：一处是它自带进气道，
+        /// 一处是**装独立进气道零件时给流量封顶**。两处各写一遍表达式，迟早一处改了另一处没改，
+        /// 于是同一台发动机换个进气道就换了个面马赫——那种账查起来最费劲。
+        /// </summary>
+        public static double FaceMachOf(IntakeSpec spec)
+        {
+            double m = spec != null && spec.FaceMachDesign > 0.0
+                ? spec.FaceMachDesign
+                : IntakeSpec.DefaultFaceMach(spec != null ? spec.Kind : IntakeKind.Axial);
+            return Math.Min(Math.Max(m, FaceMachMin), FaceMachMax);
+        }
 
         /// <summary>由整机设计取来流条件求解（设计点/非设计点/界面读数共用这一个入口）。</summary>
         public static IntakeSolution Solve(EngineDesignData d, double mach, double faceMachOverride,
@@ -196,7 +222,7 @@ namespace JetForge.Core
             else if (spec.Shape != null && spec.Shape.Sections != null
                      && spec.Shape.Sections.Count >= IntakeProfile.MinSections)
                 faceMach = FaceMachFromAreaRatio(s.FaceArea / Math.Max(s.ThroatArea, 1e-9));
-            else faceMach = spec.FaceMachDesign > 0.0 ? spec.FaceMachDesign : IntakeSpec.DefaultFaceMach(spec.Kind);
+            else faceMach = FaceMachOf(spec);
             faceMach = Math.Min(Math.Max(faceMach, FaceMachMin), FaceMachMax);
             s.FaceMach = faceMach;
 

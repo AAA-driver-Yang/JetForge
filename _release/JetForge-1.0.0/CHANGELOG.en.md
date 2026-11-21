@@ -87,6 +87,10 @@ This file records only what a player can notice. Item-by-item technical detail l
   was required. There is now a "tilt side/top [-5][+5]" button row for slanted inlets.
 
 ### Fixed
+- **A bigger intake no longer means more thrust**: the engine used to take whatever air the part's
+  throat could pass, so a huge intake shape made a 2 t engine swallow over 7000 kg/s and multiply its
+  thrust (a player measured 344 kN at 7787 kg/s). The engine face is now a hard cap: the face is only so
+  wide and its Mach number is fixed, so the surplus spills at the lip - the status line says so.
 - **"Draft ready" and "No draft yet" showed up on the same screen**: the footer decided whether the inputs
   had changed with `Math.Abs(a-b) > 1e-9`, but a slider returns its value quantised to pixel steps, so feeding
   it back looked like a change on every frame - the draft was thrown away one frame after being generated.

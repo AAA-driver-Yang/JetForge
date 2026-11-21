@@ -340,12 +340,29 @@ namespace JetForge.Core
         /// 注意 `LegacyMassFlow`：发动机的流量口径一直是"喉道 + 来流总压 + 面马赫"，
         /// 那是为缺省轴对称逐位对齐过的老公式。这里按同样口径给合计值，
         /// 所以装了独立进气道之后，设计点也不会因为换了套算法而莫名其妙地跳一截。
+        ///
+        /// 两个重载：不带发动机面的那个（老调用方）逐位不变；带上发动机面面积与面马赫的那个，
+        /// 会把流量封顶到"这台发动机进口那一面能通过的量"（见 §284：进气道做多大都不该让
+        /// 发动机多吃空气，多出来的只能在唇口溢流）。
         /// </summary>
         public IntakeSolution ToSolution(double alt, double mach)
+        {
+            return ToSolution(alt, mach, double.NaN, double.NaN, double.NaN);
+        }
+
+        /// <param name="engineFaceArea">这台发动机自己进气道那一面的面积（m²）；NaN = 不封顶。</param>
+        /// <param name="engineFaceMach">同上的设计面马赫；NaN = 用零件解出来的面马赫。</param>
+        /// <param name="engineBleed">发动机自带的抽气比例（NaN = 用零件的合计口径）。</param>
+        public IntakeSolution ToSolution(double alt, double mach, double engineFaceArea,
+                                         double engineFaceMach, double engineBleed)
         {
             Refresh(alt, mach);
 
             IntakeSolution s = new IntakeSolution();
+            // 这两个是"这一次求解"的结论，不能沿用上一次的：同一个零件在飞行中会被问很多次，
+            // 有一次被削过一次没被削，残留的 true 会让界面一直说"削了"。
+            s.FlowCappedByEngineFace = false;
+            s.EngineFaceCapMassFlow = 0.0;
             s.Valid = Valid;
             s.Altitude = alt;
             s.Mach = mach;
@@ -387,6 +404,39 @@ namespace JetForge.Core
             // （单件、且发动机面本来就比喉道宽时这条不生效，所以老口径逐位不变；
             //   多件时它把"N 份满流量"压回一份，就是这一步治住了"装几件推力乘几"。）
             if (Count > 1 && _maxLegacy > 1e-6 && s.LegacyMassFlow > _maxLegacy) s.LegacyMassFlow = _maxLegacy;
+
+            // ── §284 发动机进口面才是硬上限 ────────────────────────────────────
+            // 上面那条只管"装了好几件"，一件超大进气道仍然按自己的喉道算流量：
+            // 玩家把进气道做到 Ø7 m，`LegacyMassFlow` 就跟着变成七千多 kg/s，
+            // 于是这台机器"吃"进七千多 kg/s、推力跟着涨几倍——发动机本身一个数没改。
+            //
+            // 物理上发动机能吞多少由它自己那张面定：面就那么大，面马赫就那么高，
+            // 多出来的空气只能在唇口溢流（溢流阻力已经在上面算过）。
+            // 所以这里拿发动机自带进气道的面面积与面马赫算一个上限，超了就压回去。
+            // 面马赫取发动机自己那份（`IntakeSolver.FaceMachOf`），与零件解出来的面马赫无关：
+            // 同一个零件装在两台不同发动机上，能吃多少是发动机说了算。
+            if (GasState.IsFinite(engineFaceArea) && engineFaceArea > 1e-9)
+            {
+                double fm = GasState.IsFinite(engineFaceMach) && engineFaceMach > 0.0
+                    ? engineFaceMach
+                    : IntakeSolver.FaceMachOf(null);
+                double bleedUse = GasState.IsFinite(engineBleed)
+                    ? Math.Min(Math.Max(engineBleed, 0.0), 0.25)
+                    : Math.Min(Math.Max(BleedFrac, 0.0), 0.25);
+                double cap = IntakeSolver.MassFlowAt(engineFaceArea, pt0, tt0, fm) * (1.0 - bleedUse);
+                s.EngineFaceCapMassFlow = cap;
+                if (cap > 1e-9 && s.LegacyMassFlow > cap)
+                {
+                    double extra = s.LegacyMassFlow - cap;
+                    s.LegacyMassFlow = cap;
+                    s.FlowCappedByEngineFace = true;
+                    // 只在削掉 2% 以上时出声：1% 以内是面积取整与加权平均的毛刺，
+                    // 每次都报一句会让真正的告警被淹掉。
+                    if (extra > cap * 0.02)
+                        s.Warn(string.Format(Loc.T("进气道口径比发动机进口大：这一面在面马赫 {0:F2} 只能吃 {1:F2} kg/s，其余 {2:F2} kg/s 在唇口溢流（进气道做多大都不会让推力变多）", "The intake is wider than the engine face: at face Mach {0:F2} the engine takes only {1:F2} kg/s, and the other {2:F2} kg/s spills at the lip (a bigger intake cannot add thrust)"),
+                            fm, cap, extra));
+                }
+            }
             for (int i = 0; i < Warnings.Count; i++) s.Warn(Warnings[i]);
             return s;
         }

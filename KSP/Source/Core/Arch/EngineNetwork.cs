@@ -164,8 +164,9 @@ namespace JetForge.Core
             };
 
             // 独立进气道：有就整段换掉，没有就 null（IntakeComponent 自己走老路）
+            // 传发动机自己那张面的面积与面马赫进去：零件做得比进口还大时，流量在这里被封顶（§284）。
             IntakeSolution intakePreset = (install != null && install.Present && install.Valid)
-                ? install.ToSolution(altUse, machUse)
+                ? install.ToSolution(altUse, machUse, d.EngineFaceArea(), d.EngineFaceMach(), double.NaN)
                 : null;
             res.Rpm = ctx.RpmDesign;
 

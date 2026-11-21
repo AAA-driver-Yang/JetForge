@@ -3020,6 +3020,69 @@ namespace JetForge.Test
                 insMix.CaptureArea, insMix.AvailableMassFlow, insMix.Tpr, insMix.Distortion));
             Console.WriteLine(string.Format("    设计点：自带口径 {0:F1} kN → 外挂两件 {1:F1} kN｜{2}",
                 plain.Thrust / 1000.0, withPart.Thrust / 1000.0, ins2.Describe()));
+
+            // ---- ⑧ 发动机进口面才是硬上限（§284）----
+            //
+            // 玩家实机反馈：一台 2.3 t 的机器，把独立进气道做到 Ø7 m 那种尺寸，
+            // 读数里出现「进气量 7787 kg/s」、推力 344.91 kN —— 进气道做多大就吃多少，
+            // 发动机本身一个数没改。物理上发动机进口那张面就那么宽，多出来的只能在唇口溢流。
+            double pSl, tSl;
+            Gas.Isa(0.0, out pSl, out tSl);
+            double faceAreaSmall = Math.PI * 0.25 * 0.5 * 0.5;   // 一台 Ø0.5 m 的小发动机
+
+            IntakeSpec huge = new IntakeSpec();
+            huge.Kind = IntakeKind.Axial;
+            huge.CaptureDiameter = 7.0;
+            huge.ThroatRatio = 0.9;
+            List<IntakeUnit> hugeOne = new List<IntakeUnit>();
+            hugeOne.Add(new IntakeUnit(huge, 0.5, "巨无霸"));
+            IntakeInstall hugeIns = IntakeInstall.Aggregate(hugeOne, tech, 0.0, 0.0);
+
+            IntakeSolution hugeOpen = hugeIns.ToSolution(0.0, 0.0);
+            IntakeSolution hugeCap = hugeIns.ToSolution(0.0, 0.0, faceAreaSmall, 0.5, double.NaN);
+            double bleedUse = Math.Min(Math.Max(huge.BleedFrac, 0.0), 0.25);
+            double wantCap = IntakeSolver.MassFlowAt(faceAreaSmall, pSl, tSl, IntakeSolver.FaceMachOf(null))
+                           * (1.0 - bleedUse);
+            Expect("Ø7 m 进气道装 Ø0.5 m 发动机面：流量被封顶", hugeCap.FlowCappedByEngineFace, true);
+            Check("封顶后的流量就是发动机面能过的量", hugeCap.LegacyMassFlow, wantCap, 1e-6, "kg/s");
+            Expect("封顶后的流量远小于不封顶（进气道白做了）", hugeOpen.LegacyMassFlow > hugeCap.LegacyMassFlow * 5.0, true);
+            Check("上限本身记下来了（给界面用）", hugeCap.EngineFaceCapMassFlow, wantCap, 1e-6, "kg/s");
+            Expect("封顶时会给玩家一句理由", hugeCap.Warnings.Count > 0, true);
+
+            // 尺寸刚好的件不许被削（否则"进气道装对了反而更弱"）
+            IntakeSpec fit = new IntakeSpec();
+            fit.Kind = IntakeKind.Axial;
+            fit.CaptureDiameter = 0.45;
+            fit.ThroatRatio = 0.8;
+            List<IntakeUnit> fitOne = new List<IntakeUnit>();
+            fitOne.Add(new IntakeUnit(fit, 0.5, "刚合适"));
+            IntakeInstall fitIns = IntakeInstall.Aggregate(fitOne, tech, 0.0, 0.0);
+            IntakeSolution fitOpen = fitIns.ToSolution(0.0, 0.0);
+            IntakeSolution fitCap = fitIns.ToSolution(0.0, 0.0, faceAreaSmall, 0.5, double.NaN);
+            Expect("进气道不比发动机进口大时不封顶", fitCap.FlowCappedByEngineFace, false);
+            Check("不封顶时流量逐位不变", fitCap.LegacyMassFlow, fitOpen.LegacyMassFlow, 1e-9, "kg/s");
+
+            // 推力层面：拿真预设比一次（这是玩家能感觉到的那个数）
+            EngineDesignData gtf = Presets.Build("GTF1100");
+            IntakeSpec hugeG = new IntakeSpec();
+            hugeG.Kind = IntakeKind.Axial;
+            hugeG.CaptureDiameter = 7.0;
+            hugeG.ThroatRatio = 0.9;
+            List<IntakeUnit> gUnits = new List<IntakeUnit>();
+            gUnits.Add(new IntakeUnit(hugeG, gtf.EngineFaceDiameter(), "巨无霸"));
+            IntakeInstall gIns = IntakeInstall.Aggregate(gUnits, gtf.Tech, 0.0, 0.0);
+            CycleResult gPlain = Cycle.SolveDesignPoint(gtf);
+            CycleResult gCapped = Cycle.SolveDesignPoint(gtf, gIns);
+            IntakeSolution gSol = gIns.ToSolution(gtf.DesignAlt, 0.0, gtf.EngineFaceArea(), gtf.EngineFaceMach(), double.NaN);
+            Expect("GTF1100 装 Ø7 m 进气道也被封顶", gSol.FlowCappedByEngineFace, true);
+            Check("GTF1100 装 Ø7 m 进气道：推力与自带进气道同一量级（±25%）", gCapped.Thrust, gPlain.Thrust, 25.0, "N");
+            Check("GTF1100 的发动机面面积就是 π/4·风扇直径²", gtf.EngineFaceArea(),
+                  Math.PI * 0.25 * gtf.Fan.Diameter * gtf.Fan.Diameter, 1e-9, "m²");
+
+            Console.WriteLine(string.Format("    超大进气道（Ø7 m 捕获）装 Ø0.5 m 发动机面：{0:F1} kg/s → 封顶 {1:F1} kg/s（面马赫 {2:F2}）",
+                hugeOpen.LegacyMassFlow, hugeCap.LegacyMassFlow, IntakeSolver.FaceMachOf(null)));
+            Console.WriteLine(string.Format("    GTF1100 自带口径 {0:F1} kN → 装 Ø7 m 进气道 {1:F1} kN｜发动机面 {2:F3} m²",
+                gPlain.Thrust / 1000.0, gCapped.Thrust / 1000.0, gtf.EngineFaceArea()));
         }
 
         /// <summary>

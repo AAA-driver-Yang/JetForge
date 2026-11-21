@@ -1,0 +1,22 @@
+# 构建产物
+bin/
+obj/
+# 取证存档
+out/
+# 临时探针
+*.bak
+# 运行日志（KSP.log 曾经被误提交过，8 MB 的游戏日志不该进源码）
+*.log
+# Python 缓存
+__pycache__/
+*.pyc
+# 发布打包产物（由 tools/make_release.sh 生成）
+_release/
+_scratch/
+# 本机 KSP 路径（进仓库的只有模板 local.props.example）
+local.props
+# 编辑器
+.vs/
+*.user
+# 导出的源码包 / 分发包暂存
+_export/

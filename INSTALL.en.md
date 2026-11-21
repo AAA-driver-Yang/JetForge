@@ -13,6 +13,8 @@ standing, with its own panel for capture area, throat ratio and compression surf
 | --- | --- |
 | KSP version | 1.12.0 – 1.12.99 (development and self-test run on 1.12.4) |
 | Required | **Waterfall** (plumes), **RocketSoundEnhancement** (dry-engine sound) |
+| Optional | texture replacers such as ReStock, Real Solar System (the base sound layer steps aside) |
+| Not verified | FAR, RO/RP-1 (both change aerodynamics and scale, so the numbers will differ) |
 
 Waterfall and RSE are hard dependencies: the self-drawn plume was removed and is not coming back.
 Drop both into `GameData` and you are done — `Waterfall.cfg` / `RSE.cfg` attach themselves through

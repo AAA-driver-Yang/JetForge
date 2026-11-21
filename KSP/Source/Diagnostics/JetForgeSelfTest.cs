@@ -2696,6 +2696,22 @@ namespace JetForge.Diagnostics
                     Log(string.Format("  断言：两件面积翻倍 {0}｜恢复不变 {1}｜件数 {2}",
                         Math.Abs(two.CaptureArea - solo.CaptureArea * 2.0) < 1e-6 ? "对" : "不对",
                         Math.Abs(two.Tpr - solo.Tpr) < 1e-3 ? "对" : "不对", two.Count));
+
+                    // ---- 大进气道不能白拿推力：发动机进口那张面是硬上限 ----
+                    //
+                    // 这一行是 FlowCappedByEngineFace / EngineFaceCapMassFlow 唯一的读者，
+                    // 也是"§284 那个 7787 kg/s"在实机上真的被压住的凭据。
+                    IntakeSpec hugeSpec = new IntakeSpec { Kind = IntakeKind.Cone, CaptureDiameter = 7.00, ThroatRatio = 0.90 };
+                    List<IntakeUnit> hugeUnits = new List<IntakeUnit>();
+                    hugeUnits.Add(new IntakeUnit(hugeSpec, 7.00, "超大"));
+                    IntakeInstall big = IntakeInstall.Aggregate(hugeUnits, part.Tech, 0.0, 0.0);
+                    double smallFace = Math.PI * 0.25 * 0.50 * 0.50;
+                    IntakeSolution capped = big.ToSolution(0.0, 0.0, smallFace, IntakeSolver.FaceMachOf(null), double.NaN);
+                    Log(string.Format("  进气道封顶：Ø7.00 m 的件想要 {0:F1} kg/s｜Ø0.50 m 发动机面只收 {1:F1} kg/s｜多余 {2:F1} kg/s 在唇口溢流",
+                        big.AvailableMassFlow, capped.LegacyMassFlow, big.AvailableMassFlow - capped.LegacyMassFlow));
+                    Log(string.Format("  断言：超大件被发动机面削住 {0}｜削到这一面能吃的量 {1}",
+                        capped.FlowCappedByEngineFace ? "对" : "不对",
+                        Math.Abs(capped.LegacyMassFlow - capped.EngineFaceCapMassFlow) < 1e-6 ? "对" : "不对"));
                 }
                 catch (Exception ex)
                 {

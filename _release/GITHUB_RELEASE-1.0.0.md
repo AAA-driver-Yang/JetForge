@@ -32,7 +32,7 @@
 ## 校验
 
 ```
-sha256  4cc624bd633d7f3eee918e1e031f70eb5de316e4ee6d6f24798d8dadd3e106cd
+sha256  792a166c232800b5cef25c23a78b380e70f86c6c3a5109710680665ab73f01e6
 ```
 
 用 `certutil -hashfile JetForge-1.0.0.zip SHA256` 或 `sha256sum JetForge-1.0.0.zip` 自己算一遍，与上面这行比对。

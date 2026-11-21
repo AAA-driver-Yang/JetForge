@@ -1,6 +1,0 @@
-<Project>
-  <!-- 这台机器的 KSP 装在哪。这个文件不进版本库（.gitignore 里有 local.props）。 -->
-  <PropertyGroup>
-    <KspDir>D:\KSP FEAT\Kerbal Space Program</KspDir>
-  </PropertyGroup>
-</Project>

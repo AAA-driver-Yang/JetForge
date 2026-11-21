@@ -492,6 +492,25 @@ namespace JetForge.Core
             return dc > 0.0 ? dc : Math.Max(InletDiameter * 0.7, 0.05);
         }
 
+        /// <summary>
+        /// 发动机进口那张面的面积（m²）。装独立进气道零件时，它是"这台机器一次能吃多少空气"的硬上限
+        /// 的分子——见 `Core/Intake/IntakeInstall.cs` 的 `ToSolution(…, engineFaceArea, …)`（§284）。
+        /// </summary>
+        public double EngineFaceArea()
+        {
+            double dia = EngineFaceDiameter();
+            return Math.PI * 0.25 * dia * dia;
+        }
+
+        /// <summary>
+        /// 发动机进口那张面的设计面马赫：它自带进气道怎么把气减速，独立进气道就用同一个数封顶。
+        /// 口径只有一处（`IntakeSolver.FaceMachOf`），这里只是把"我这台机器的那份 spec"喂进去。
+        /// </summary>
+        public double EngineFaceMach()
+        {
+            return IntakeSolver.FaceMachOf(Intake != null ? Intake.Resolved() : null);
+        }
+
         // `MaxTipDiameterOnShaft(shaft)` 曾放在这里：逐部件取同轴最大直径。
         // 现在这件事由 `Core/Arch/ShaftSet.cs` 与 `Core/EngineGeometry.cs` 各按自己的口径做，
         // 这个副本没人调用（也没覆盖分流环/加力段），留着只会让人以为它才是准的，已删。
