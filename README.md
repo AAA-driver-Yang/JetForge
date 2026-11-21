@@ -6,26 +6,23 @@
 玩家文档在 [`INSTALL.md`](INSTALL.md)（安装与首次使用，英文版 [`INSTALL.en.md`](INSTALL.en.md)）
 与 `GameData/JetForge/README.md`（随发布包一起走）。逐项技术记录在 `docs/phase2-mod.md`（不在仓库里，只随开发进行）。
 
-要发布？照 [`RELEASE.md`](RELEASE.md) 的清单走：A 段一条命令自动查（`python tools/check_readiness.py`），
-B 段只能人做（截图、英文审校、真地址与 stable、CKAN 提交）。
-
 ## 目录
 
-| 路径 | 内容 |
-| --- | --- |
-| `KSP/Source/Core/` | 热力与气动内核。**不依赖 KSP**，可单独编译与回归 |
-| `KSP/Source/Core/Arch/` | 部件网络、逐轴转矩、几何接口表、长度/损失、特性图 |
-| `KSP/Source/Core/Intake/` | 进气道求解器、激波、型线、多件合成、原版件桥接 |
-| `KSP/Source/Core/Diagnostics/` | 状态审计、故障台账、模型档案（纯 .NET，可测） |
-| `KSP/Source/Mesh/` | 程序化网格（机身、进气道放样、花瓣、剖视） |
-| `KSP/Source/UI/` | 设计器、进气道窗口、型线编辑器、向导、测试台、剖视 |
-| `KSP/Source/FX/` | Waterfall 羽流与 RSE 干态声音（全部走反射） |
-| `KSP/Source/Diagnostics/` | 实机自检（真启动游戏跑一遍） |
-| `KSP/Source/Properties/` | 程序集元数据（版本号与 `Core/Version.cs` 同步） |
-| `GameData/JetForge/` | 随包发布的内容：零件 cfg、贴图、声音、Waterfall/RSE 配置、`.version`、词条 |
-| `JetForge.Test/` | 回归工程（段数见 `dotnet run` 末行，不引用 UnityEngine） |
-| `tools/` | 十九道闸门、贴图/音效生成器、发布打包与备份脚本（分类见 [`tools/README.md`](tools/README.md)） |
-| `proto/` | 最早的 Python 原型（移植到 C# 之前的参照实现，不参与构建） |
+|路径|内容|
+|-|-|
+|`KSP/Source/Core/`|热力与气动内核。**不依赖 KSP**，可单独编译与回归|
+|`KSP/Source/Core/Arch/`|部件网络、逐轴转矩、几何接口表、长度/损失、特性图|
+|`KSP/Source/Core/Intake/`|进气道求解器、激波、型线、多件合成、原版件桥接|
+|`KSP/Source/Core/Diagnostics/`|状态审计、故障台账、模型档案（纯 .NET，可测）|
+|`KSP/Source/Mesh/`|程序化网格（机身、进气道放样、花瓣、剖视）|
+|`KSP/Source/UI/`|设计器、进气道窗口、型线编辑器、向导、测试台、剖视|
+|`KSP/Source/FX/`|Waterfall 羽流与 RSE 干态声音（全部走反射）|
+|`KSP/Source/Diagnostics/`|实机自检（真启动游戏跑一遍）|
+|`KSP/Source/Properties/`|程序集元数据（版本号与 `Core/Version.cs` 同步）|
+|`GameData/JetForge/`|随包发布的内容：零件 cfg、贴图、声音、Waterfall/RSE 配置、`.version`、词条|
+|`JetForge.Test/`|回归工程（段数见 `dotnet run` 末行，不引用 UnityEngine）|
+|`tools/`|十九道闸门、贴图/音效生成器、发布打包与备份脚本（分类见 [`tools/README.md`](tools/README.md)）|
+|`proto/`|最早的 Python 原型（移植到 C# 之前的参照实现，不参与构建）|
 
 ## 构建
 
@@ -36,10 +33,10 @@ B 段只能人做（截图、英文审校、真地址与 stable、CKAN 提交）
 cp local.props.example local.props      # 然后把里面的路径改成你的
 
 # ② 环境变量
-export JETFORGE_KSP_DIR="C:/Program Files (x86)/Steam/steamapps/common/Kerbal Space Program"
+export JETFORGE\_KSP\_DIR="C:/Program Files (x86)/Steam/steamapps/common/Kerbal Space Program"
 
 # ③ 命令行
-dotnet build KSP/JetForge.csproj -c Release -p:KspDir="C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program"
+dotnet build KSP/JetForge.csproj -c Release -p:KspDir="C:\\Program Files (x86)\\Steam\\steamapps\\common\\Kerbal Space Program"
 ```
 
 然后：
@@ -58,16 +55,16 @@ dotnet run --project JetForge.Test/JetForge.Test.csproj -c Release --no-build
 ## 一条命令跑全部检查
 
 ```bash
-bash tools/run_tests.sh            # 六步：构建 → 十六道闸门+回归 → 实机自检 → 出包 → 发布闸门 → 结论
-bash tools/run_tests.sh --no-game  # 跳过实机自检（不启动游戏）
-bash tools/run_tests.sh --ci       # 没有 KSP 的机器（CI 用这个）：闸门 + 回归
+bash tools/run\_tests.sh            # 六步：构建 → 十六道闸门+回归 → 实机自检 → 出包 → 发布闸门 → 结论
+bash tools/run\_tests.sh --no-game  # 跳过实机自检（不启动游戏）
+bash tools/run\_tests.sh --ci       # 没有 KSP 的机器（CI 用这个）：闸门 + 回归
 ```
 
 各道闸门管什么、账本文件怎么用，见 [`tools/README.md`](tools/README.md)。
 GitHub Actions 跑的是 `--ci` 那一档（[`.github/workflows/ci.yml`](.github/workflows/ci.yml)）——
 实机自检与出包要真的游戏目录，只能在本地做。
 
-构建要求：.NET SDK 8+（`net472` 目标）、KSP 1.8~1.12 的 `Managed` 目录下的四个引用
+构建要求：.NET SDK 8+（`net472` 目标）、KSP 1.8\~1.12 的 `Managed` 目录下的四个引用
 （`Assembly-CSharp` / `UnityEngine` / `UnityEngine.CoreModule` / `UnityEngine.AudioModule`）。
 Waterfall 与 RocketSoundEnhancement 是**硬依赖**：羽流只剩 Waterfall 一条路（自绘加法锥已删），
 干态声音交给 RSE。少一样不会崩，但玩家会看到「发动机在转却不出火」或「一点声都没有」——
@@ -75,18 +72,18 @@ Waterfall 与 RocketSoundEnhancement 是**硬依赖**：羽流只剩 Waterfall �
 
 ## 回归与自检
 
-- **回归**：`JetForge.Test` 把 Core 全部路径跑一遍——气路守恒、各站状态、喷管分项、
-  进气道（亚/跨/超声速、型线、多件、原版件）、压气机特性图、逐轴转矩、故障台账、存档往返、
-  长度与质量标定。末行 `全部回归通过。` 才算过；任何一条超差返回码非 0。
-  新加 Core 文件**必须手工加进** `JetForge.Test.csproj` 的 `<Compile Include>`，否则静默丢覆盖。
-- **实机自检**：进游戏后 `GameData/JetForge/selftest.log` 会记录 400+ 行结果
-  （判据闸门、状态审计、零件网格三角数、原版桥往返、贴图齐全）。看到
-  `==== 自检结束 ====` 与 `FAIL 0` 才算跑完。
+* **回归**：`JetForge.Test` 把 Core 全部路径跑一遍——气路守恒、各站状态、喷管分项、
+进气道（亚/跨/超声速、型线、多件、原版件）、压气机特性图、逐轴转矩、故障台账、存档往返、
+长度与质量标定。末行 `全部回归通过。` 才算过；任何一条超差返回码非 0。
+新加 Core 文件**必须手工加进** `JetForge.Test.csproj` 的 `<Compile Include>`，否则静默丢覆盖。
+* **实机自检**：进游戏后 `GameData/JetForge/selftest.log` 会记录 400+ 行结果
+（判据闸门、状态审计、零件网格三角数、原版桥往返、贴图齐全）。看到
+`==== 自检结束 ====` 与 `FAIL 0` 才算跑完。
 
 ## 发布
 
 ```bash
-tools/make_release.sh          # 产出 _release/JetForge-<version>.zip 与解包目录
+tools/make\_release.sh          # 产出 \_release/JetForge-<version>.zip 与解包目录
 ```
 
 脚本会校验三处版本号一致（`Core/Version.cs`、`Properties/AssemblyInfo.cs`、`JetForge.version`），
@@ -100,3 +97,4 @@ tools/make_release.sh          # 产出 _release/JetForge-<version>.zip 与解�
 
 MIT，见 [LICENSE](LICENSE)。`GameData/JetForge/Sounds/` 下的音源由 RSE 的 JetsTurbines 派生，
 遵循其 GPL-3.0；贴图与网格由本仓库脚本生成。
+
