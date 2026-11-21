@@ -1,0 +1,72 @@
+/// <summary>
+        /// 风扇特性线的离线试验：如果涵道流量不再按"设计点比例"摊，而是按旁路喷口
+        /// 实际能过多大流量走，SFC 的谷底会不会挪到该去的位置？
+        ///
+        /// 为什么先离线算：上一轮把这个回路直接接进求解器，低功率下它会来回摆
+        /// （慢车直接算成 0），因为风扇压比是从"要吸收多少功"反推的，
+        /// 而流量又是从压比推的，两个未知数一个方程。离线这里固定功、
+        /// 让流量和压比互相咬合，先看答案值不值得动求解器。
+        /// </summary>
+        private static void RunFanMapProbe(EngineDesignData d)
+        {
+            Console.WriteLine("=== 35. 风扇特性线离线试验：涵道流量按喷口容量走 ===");
+            DesignConstants c = OffDesign.DeriveDesignConstants(d);
+            CycleResult dz = Cycle.SolveDesignPoint(d);
+            if (!c.Ok || !dz.Ok)
+            {
+                Console.WriteLine("  设计点不成立，跳过");
+                return;
+            }
+
+            double mdotBypD = dz.MdotAir - dz.MdotCore;
+            double tt2D = dz.T2, fprD = dz.Fpr, wFanD = dz.WFan;
+            Console.WriteLine(string.Format(
+                "  设计点：涵道 {0:F1} kg/s　风扇压比 {1:F3}　出口总温 {2:F1} K　风扇功率 {3:F0} kW",
+                mdotBypD, fprD, tt2D, wFanD / 1000.0));
+            Console.WriteLine("  thr  FPR原 FPR新  ṁby原  ṁby新  Vj原  Vj新  F原(kN) F新(kN) SFC原   SFC新");
+
+            double bestOld = 1e9, bestOldThr = 0.0, bestNew = 1e9, bestNewThr = 0.0;
+            const double p0 = 101325.0;
+            const double tt1 = 288.15;
+            Technology tech = TechLevel.Of(d.Tech);
+            for (int i = 0; i <= 20; i++)
+            {
+                double thr = i * 0.05;
+                OffDesignResult r = OffDesign.Solve(d, 0.0, 0.0, thr, 0.0, c, 60);
+                if (!r.Ok || r.NetThrust <= 1e-6 || r.MdotAir <= 0.0) continue;
+
+                double mBypOld = r.MdotAir - r.MdotCore;
+                double fprE = r.Fpr, tt2E = r.T2;
+                double gf = Gas.Gamma(tt1);
+                // 固定风扇功率，让压比与流量互相咬合：压比高 → 流量大、每公斤温升也大。
+                for (int it = 0; it < 40; it++)
+                {
+                    double dT = Math.Max(tt1 * (Math.Pow(Math.Max(fprE, 1.0), (gf - 1.0) / (gf * tech.FanEtaPol)) - 1.0), 1e-6);
+                    tt2E = tt1 + dT;
+                    double mByp = mdotBypD * (fprE / fprD) * Math.Sqrt(Math.Max(tt2D, 1e-6) / Math.Max(tt2E, 1e-6));
+                    double wNow = mByp * Gas.Cp(tt1) * dT;
+                    double ratio = wNow / Math.Max(r.WFan, 1e-9);
+                    if (Math.Abs(ratio - 1.0) < 2e-3) break;
+                    fprE *= Math.Pow(ratio, 0.35);
+                }
+                double dTe = Math.Max(tt2E - tt1, 1e-6);
+                double mBypE = mdotBypD * (fprE / fprD) * Math.Sqrt(Math.Max(tt2D, 1e-6) / Math.Max(tt2E, 1e-6));
+                double ve, ae, pe, thrustBy, choked;
+                Gas.Nozzle(mBypE, p0 * fprE, tt2E, p0, tech.NozzleEta,
+                           out ve, out ae, out pe, out thrustBy, out choked);
+                double fNew = r.ThrustCore + thrustBy;
+                double sfcNew = fNew > 1e-6 ? r.FuelFlow * 3600.0 / fNew : 0.0;
+
+                if (r.Sfc < bestOld) { bestOld = r.Sfc; bestOldThr = thr; }
+                if (sfcNew < bestNew && sfcNew > 0.0) { bestNew = sfcNew; bestNewThr = thr; }
+                Console.WriteLine(string.Format(
+                    "  {0:F2} {1,5:F2} {2,5:F2} {3,6:F1} {4,5:F1} {5,5:F0} {6,5:F0} {7,7:F2} {8,7:F2} {9,6:F4} {10,6:F4}",
+                    thr, r.Fpr, fprE, mBypOld, mBypE, r.VJetBypass, ve,
+                    r.NetThrust / 1000.0, fNew / 1000.0, r.Sfc, sfcNew));
+            }
+            Console.WriteLine(string.Format("  谷底：原口径 油门 {0:F2}（{1:F4}）｜喷口容量口径 油门 {2:F2}（{3:F4}）",
+                bestOldThr, bestOld, bestNewThr, bestNew));
+            // 这条先只当刻度尺：还没接进求解器，位置对不对先看着。
+            Console.WriteLine(string.Format("  [刻度] 按喷口容量走之后谷底挪到 {0:F2}（真机 0.85~0.95）", bestNewThr));
+            Console.WriteLine();
+        }

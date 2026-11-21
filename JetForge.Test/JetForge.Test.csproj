@@ -1,0 +1,120 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- 本机只装了 net10 的参考包，离线也编得动；net8 会去 nuget 抓 targeting pack 然后失败 -->
+    <TargetFramework>net10.0</TargetFramework>
+    <NuGetAudit>false</NuGetAudit>
+    <RestoreSources></RestoreSources>
+    <LangVersion>7.3</LangVersion>
+    <RootNamespace>JetForge.Test</RootNamespace>
+    <AssemblyName>JetForge.Test</AssemblyName>
+    <Nullable>disable</Nullable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 只包含不依赖 KSP 的物理内核：这样同一份算法能在命令行里跑回归，
+         不用启动游戏就能验证 C# 移植是否与 Python 原型一致。 -->
+    <Compile Include="..\KSP\Source\Core\Gas.cs" Link="Core\Gas.cs" />
+    <Compile Include="..\KSP\Source\Core\TechLevel.cs" Link="Core\TechLevel.cs" />
+    <Compile Include="..\KSP\Source\Core\EngineDesignData.cs" Link="Core\EngineDesignData.cs" />
+    <Compile Include="..\KSP\Source\Core\EngineGeometry.cs" Link="Core\EngineGeometry.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake.cs" Link="Core\Intake.cs" />
+    <Compile Include="..\KSP\Source\Core\DesignSchema.cs" Link="Core\DesignSchema.cs" />
+    <Compile Include="..\KSP\Source\Core\DesignWizard.cs" Link="Core\DesignWizard.cs" />
+    <Compile Include="..\KSP\Source\Core\DesignVerdict.cs" Link="Core\DesignVerdict.cs" />
+    <Compile Include="..\KSP\Source\Core\ModelLedger.cs" Link="Core\ModelLedger.cs" />
+    <Compile Include="..\KSP\Source\Core\Loc.cs" Link="Core\Loc.cs" />
+    <Compile Include="..\KSP\Source\Core\WizardUndo.cs" Link="Core\WizardUndo.cs" />
+    <Compile Include="..\KSP\Source\Core\DesignUndo.cs" Link="Core\DesignUndo.cs" />
+    <Compile Include="..\KSP\Source\Core\HintIndex.cs" Link="Core\HintIndex.cs" />
+    <Compile Include="..\KSP\Source\Core\Cycle.cs" Link="Core\Cycle.cs" />
+    <Compile Include="..\KSP\Source\Core\OffDesign.cs" Link="Core\OffDesign.cs" />
+    <Compile Include="..\KSP\Source\Core\OffDesign.Shaft.cs" Link="Core\OffDesign.Shaft.cs" />
+    <Compile Include="..\KSP\Source\Core\Criteria.cs" Link="Core\Criteria.cs" />
+    <Compile Include="..\KSP\Source\Core\Criteria.Compressor.cs" Link="Core\Criteria.Compressor.cs" />
+    <Compile Include="..\KSP\Source\Core\Criteria.Controls.cs" Link="Core\Criteria.Controls.cs" />
+    <Compile Include="..\KSP\Source\Core\Criteria.Intake.cs" Link="Core\Criteria.Intake.cs" />
+    <Compile Include="..\KSP\Source\Core\Criteria.Nozzle.cs" Link="Core\Criteria.Nozzle.cs" />
+    <Compile Include="..\KSP\Source\Core\Criteria.Shaft.cs" Link="Core\Criteria.Shaft.cs" />
+    <Compile Include="..\KSP\Source\Core\Criteria.Thermal.cs" Link="Core\Criteria.Thermal.cs" />
+    <Compile Include="..\KSP\Source\Core\StageLoad.cs" Link="Core\StageLoad.cs" />
+    <Compile Include="..\KSP\Source\Core\PerformanceGrid.cs" Link="Core\PerformanceGrid.cs" />
+    <Compile Include="..\KSP\Source\Core\Simple.cs" Link="Core\Simple.cs" />
+  <Compile Include="..\KSP\Source\Core\MassCost.cs" Link="Core\MassCost.cs" />
+    <Compile Include="..\KSP\Source\Core\PlumeMath.cs" Link="Core\PlumeMath.cs" />
+    <Compile Include="..\KSP\Source\Core\GridFactory.cs" Link="Core\GridFactory.cs" />
+    <Compile Include="..\KSP\Source\Core\DesignSignature.cs" Link="Core\DesignSignature.cs" />
+    <Compile Include="..\KSP\Source\Core\UserLibrary.cs" Link="Core\UserLibrary.cs" />
+    <!-- 两台设计并排比读数：只读设计点与质量/长度估算，不碰 Unity，进回归。 -->
+    <Compile Include="..\KSP\Source\Core\DesignCompare.cs" Link="Core\DesignCompare.cs" />
+    <Compile Include="..\KSP\Source\Core\Presets.cs" Link="Core\Presets.cs" />
+    <Compile Include="..\KSP\Source\Core\Spool.cs" Link="Core\Spool.cs" />
+    <Compile Include="..\KSP\Source\Core\StockBridge.cs" Link="Core\StockBridge.cs" />
+    <Compile Include="..\KSP\Source\Core\Windmill.cs" Link="Core\Windmill.cs" />
+    <Compile Include="..\KSP\Source\Core\Afterburner.cs" Link="Core\Afterburner.cs" />
+    <Compile Include="..\KSP\Source\Core\AfterburnerTransient.cs" Link="Core\AfterburnerTransient.cs" />
+    <Compile Include="..\KSP\Source\Core\NozzleSchedule.cs" Link="Core\NozzleSchedule.cs" />
+    <Compile Include="..\KSP\Source\Core\FanMap.cs" Link="Core\FanMap.cs" />
+    <Compile Include="..\KSP\Source\Core\CompressorMap.cs" Link="Core\CompressorMap.cs" />
+    <Compile Include="..\KSP\Source\Core\Defects.cs" Link="Core\Defects.cs" />
+    <Compile Include="..\KSP\Source\Core\Surge.cs" Link="Core\Surge.cs" />
+    <Compile Include="..\KSP\Source\Core\Filter.cs" Link="Core\Filter.cs" />
+    <Compile Include="..\KSP\Source\Core\SpoolDynamics.cs" Link="Core\SpoolDynamics.cs" />
+    <Compile Include="..\KSP\Source\Core\ThrustVector.cs" Link="Core\ThrustVector.cs" />
+    <Compile Include="..\KSP\Source\Core\ControlSystem.cs" Link="Core\ControlSystem.cs" />
+    <Compile Include="..\KSP\Source\Core\DetailSpec.cs" Link="Core\DetailSpec.cs" />
+    <Compile Include="..\KSP\Source\Core\NozzleVisual.cs" Link="Core\NozzleVisual.cs" />
+    <Compile Include="..\KSP\Source\Core\CoastThrust.cs" Link="Core\CoastThrust.cs" />
+    <Compile Include="..\KSP\Source\Core\VectorCommand.cs" Link="Core\VectorCommand.cs" />
+    <!-- 飞行链路本身也编进来：抬底→风车→滞后→查表→自持闸→库存桥这一整段
+         以前只活在 PartModule 里，命令行一行都跑不了，只能靠实飞验。 -->
+    <Compile Include="..\KSP\Source\Core\EngineGuard.cs" Link="Core\EngineGuard.cs" />
+    <Compile Include="..\KSP\Source\Core\FlightStep.cs" Link="Core\FlightStep.cs" />
+    <Compile Include="..\KSP\Source\Core\CycleSampler.cs" Link="Core\CycleSampler.cs" />
+    <!-- 存档层也一起编进来：它只依赖 ConfigNode，而 ConfigNodeStub.cs 提供了最小实现。
+         这样"设计参数存得回来吗"就能在命令行里验，不用进游戏。 -->
+    <Compile Include="..\KSP\Source\Core\EngineDesignData.Persistence.cs" Link="Core\EngineDesignData.Persistence.cs" />
+    <Compile Include="..\KSP\Source\Core\SimpleDesign.Persistence.cs" Link="Core\SimpleDesign.Persistence.cs" />
+    <!-- 架构层：数据契约（GasState/测站）、部件接口、气路模板、轴系、整机网络。
+         这一层就是"设计点怎么走"的新骨架，必须和命令行回归一起编，否则
+         "逐位相同"这条断言没法验。 -->
+    <Compile Include="..\KSP\Source\Core\Arch\GasState.cs" Link="Core\Arch\GasState.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\EngineComponent.cs" Link="Core\Arch\EngineComponent.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\GasPath.cs" Link="Core\Arch\GasPath.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\Components.cs" Link="Core\Arch\Components.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\EngineNetwork.cs" Link="Core\Arch\EngineNetwork.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\ShaftSet.cs" Link="Core\Arch\ShaftSet.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\DuctLoss.cs" Link="Core\Arch\DuctLoss.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\EngineLength.cs" Link="Core\Arch\EngineLength.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\Ports.cs" Link="Core\Arch\Ports.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\TorqueBalance.cs" Link="Core\Arch\TorqueBalance.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\CompressorChart.cs" Link="Core\Arch\CompressorChart.cs" />
+    <Compile Include="..\KSP\Source\Core\Arch\RefreshPlan.cs" Link="Core\Arch\RefreshPlan.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake\IntakeProfile.cs" Link="Core\Intake\IntakeProfile.cs" />
+    <!-- 型线的三个 partial：预设轮廓 / 镜像 / 量出来的几何。逐个列，没有通配。 -->
+    <Compile Include="..\KSP\Source\Core\Intake\IntakeProfile.Presets.cs" Link="Core\Intake\IntakeProfile.Presets.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake\IntakeProfile.Mirror.cs" Link="Core\Intake\IntakeProfile.Mirror.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake\IntakeProfile.Geometry.cs" Link="Core\Intake\IntakeProfile.Geometry.cs" />
+    <Compile Include="..\KSP\Source\Core\FuelSchedule.cs" Link="Core\FuelSchedule.cs" />
+    <Compile Include="..\KSP\Source\Core\FuelLoop.cs" Link="Core\FuelLoop.cs" />
+    <!-- 高空再起动窗口：熄火之后"还能不能点着"的判据，纯 Core，进回归。 -->
+    <Compile Include="..\KSP\Source\Core\Relight.cs" Link="Core\Relight.cs" />
+    <!-- 齿轮箱柔度：扭角与本体扭振，靠纯几何与扭转刚度算，不碰气路，进回归。 -->
+    <Compile Include="..\KSP\Source\Core\Arch\Torsion.cs" Link="Core\Arch\Torsion.cs" />
+    <!-- 进气道子系统：独立的性能求解器，不依赖 Cycle 的任何中间量。 -->
+    <Compile Include="..\KSP\Source\Core\Intake\IntakeSolver.cs" Link="Core\Intake\IntakeSolver.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake\IntakeGeometry.cs" Link="Core\Intake\IntakeGeometry.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake\IntakeSpecCodec.cs" Link="Core\Intake\IntakeSpecCodec.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake\IntakeInstall.cs" Link="Core\Intake\IntakeInstall.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake\StockIntakeBridge.cs" Link="Core\Intake\StockIntakeBridge.cs" />
+    <Compile Include="..\KSP\Source\Core\Intake\Shock.cs" Link="Core\Intake\Shock.cs" />
+    <!-- 运行时状态审计：核对"结果自己跟自己对得上吗"，不重算物理。 -->
+    <Compile Include="..\KSP\Source\Core\Diagnostics\StateAudit.cs" Link="Core\Diagnostics\StateAudit.cs" />
+    <Compile Include="..\KSP\Source\Core\Diagnostics\FaultBook.cs" Link="Core\Diagnostics\FaultBook.cs" />
+    <!-- 测试台的表：它是"选工况→调正式求解→排版"，所以要进回归。 -->
+    <Compile Include="..\KSP\Source\Core\Diagnostics\EngineBench.cs" Link="Core\Diagnostics\EngineBench.cs" />
+  </ItemGroup>
+
+</Project>

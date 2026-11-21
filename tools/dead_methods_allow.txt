@@ -1,0 +1,12 @@
+# 由 KSP / Unity 反射调用的方法：名字在全仓找不到调用点，但运行时会被调用。
+#
+# 格式：`名字 # 理由`。理由必须写——这一份白名单是给下一个人的解释，不是给自己省事。
+
+GetInfo # PartModule 覆写：KSP 用反射取 PAW 里的说明文字（ModuleJetForgeEngine.Design.cs）
+GetModuleCost # PartModule 覆写：KSP 建部件清单时问造价
+GetModuleCostChangeWhen # PartModule 覆写：编辑器里悬停时问"改了会贵多少"
+GetModuleMassChangeWhen # PartModule 覆写：编辑器里悬停时问"改了会重多少"
+RebuildGridEvent # [KSPEvent] 处理函数：PAW 按钮按名字反射找到它
+OpenDesignerAction # [KSPAction] 处理函数：动作组/PAW 按名字反射找到它
+ToggleAfterburnerAction # [KSPAction] 处理函数：同上
+Awake # Unity 消息：MonoBehaviour 组件被 AddComponent 后由引擎调用

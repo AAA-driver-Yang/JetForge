@@ -1,0 +1,85 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>JetForge</AssemblyName>
+    <RootNamespace>JetForge</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <NoWarn>CS0649;CS0169;CS0414</NoWarn>
+    <!--
+      KspDir 是"本机 KSP 装在哪"，不能写死在仓库里：
+      别人的路径和你的一定不同，写死了就只有你一个人编得过。
+      三种给法，优先级从高到低：
+        ① 命令行  dotnet build KSP/JetForge.csproj -p:KspDir="C:\...\Kerbal Space Program"
+        ② 环境变量 JETFORGE_KSP_DIR
+        ③ 仓库根的 local.props（不进版本库，模板见 local.props.example）
+    -->
+    <KspDir Condition="'$(KspDir)' == ''">$(JETFORGE_KSP_DIR)</KspDir>
+  </PropertyGroup>
+
+  <Import Project="..\local.props" Condition="Exists('..\local.props')" />
+
+  <Target Name="NeedKspDir" BeforeTargets="ResolveAssemblyReferences" Condition="'$(KspDir)' == ''">
+    <Error Text="还没有告诉我要编哪个 KSP：把 local.props.example 复制成仓库根的 local.props 并填 KspDir，或用 -p:KspDir=&quot;...&quot; 传进来。" />
+  </Target>
+
+  <ItemGroup>
+    <Compile Include="Source\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(KspDir)\KSP_x64_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(KspDir)\KSP_x64_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(KspDir)\KSP_x64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>$(KspDir)\KSP_x64_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(KspDir)\KSP_x64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(KspDir)\KSP_x64_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(KspDir)\KSP_x64_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyToGameData" AfterTargets="Build">
+    <PropertyGroup>
+      <OutDir>$(KspDir)\GameData\JetForge\Plugins</OutDir>
+      <CfgSource>$(MSBuildThisFileDirectory)..\GameData\JetForge\</CfgSource>
+      <CfgTarget>$(KspDir)\GameData\JetForge\</CfgTarget>
+    </PropertyGroup>
+    <MakeDir Directories="$(OutDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(OutDir)" />
+    <ItemGroup>
+      <CfgFiles Include="$(CfgSource)**\*.cfg" />
+      <CfgFiles Include="$(CfgSource)**\*.png" />
+      <CfgFiles Include="$(CfgSource)**\*.wav" />
+      <CfgFiles Include="$(CfgSource)**\*.version" />
+      <CfgFiles Include="$(CfgSource)**\*.md" />
+    </ItemGroup>
+    <Copy SourceFiles="@(CfgFiles)" DestinationFiles="@(CfgFiles->'$(CfgTarget)%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" Condition="Exists('$(CfgSource)')" />
+    <Message Importance="high" Text="JetForge.dll -> $(OutDir)（配置 @(CfgFiles->Count()) 个文件）" />
+  </Target>
+
+</Project>

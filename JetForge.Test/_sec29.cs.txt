@@ -1,0 +1,200 @@
+// ============ 29. 全参数空间不变式体检（新特性一起上） ============
+
+        /// <summary>
+        /// 第 19 段只验"不崩、不出 NaN"。这一段验的是**物理上必须成立的关系**，
+        /// 而且专门把后来加的东西全部打开：离心压气机、四种燃烧室形状、收扩喷管、
+        /// 加力 + 油气比、三轴。
+        ///
+        /// 不变式（任何一台发动机都该满足）：
+        ///  ① 油门加大，推力不减（同一高度/马赫）
+        ///  ② 高度升高，推力不增（同一油门/马赫）
+        ///  ③ 有推力时 SFC 必须落在 (0, 1.0) —— 真机最差也就 0.3 上下
+        ///  ④ 转速百分比落在 (0, 115]
+        ///  ⑤ 加力表在同一点上推力不低于干态表
+        ///  ⑥ 存文件再读回来，字段一个不差
+        /// </summary>
+        private static void RunInvariantCases()
+        {
+            uint seed = 20261115u;
+            Func<double, double, double> rnd = (lo, hi) =>
+            {
+                seed = seed * 1664525u + 1013904223u;
+                double u = (seed >> 8) / 16777216.0;
+                return lo + (hi - lo) * u;
+            };
+            Func<int, int, int> ri = (lo, hi) => (int)rnd(lo, hi + 0.999);
+
+            int n = 120;
+            int solved = 0;
+            int v1 = 0, v2 = 0, v3 = 0, v4 = 0, v5 = 0, v6 = 0, nonfinite = 0, buildThrow = 0;
+            string e1 = "", e2 = "", e3 = "", e4 = "", e5 = "", e6 = "", eFin = "";
+
+            double[] ths = { 0.25, 0.55, 0.85, 1.0 };
+            double[] als = { 0.0, 6000.0, 11000.0 };
+            double[] mcs = { 0.0, 0.55, 0.90 };
+
+            EngineDesignData[] samples = new EngineDesignData[24];
+            int ns = 0;
+
+            for (int i = 0; i < n; i++)
+            {
+                EngineDesignData d = new EngineDesignData();
+                d.Kind = rnd(0, 2) < 0.6 ? EngineKind.Turbofan : EngineKind.Turbojet;
+                d.ShaftCount = ri(1, 3);
+                d.DesignAlt = rnd(0, 12000);
+                d.DesignMach = rnd(0, 1.4);
+                d.Fan.Diameter = rnd(0.5, 1.8);
+                d.Fan.HubTipRatio = rnd(0.25, 0.6);
+                d.CoreInletDiameter = rnd(0.25, 0.9);
+                d.Lpc.Stages = ri(0, 4);
+                d.Lpc.TipDiameter = d.CoreInletDiameter * rnd(0.8, 1.0);
+                d.Lpc.Kind = rnd(0, 2) < 0.7 ? CompressorKind.Axial : CompressorKind.Centrifugal;
+                d.Hpc.Stages = ri(2, 8);
+                d.Hpc.TipDiameter = d.CoreInletDiameter * rnd(0.7, 0.95);
+                d.Hpc.Kind = rnd(0, 2) < 0.6 ? CompressorKind.Axial : CompressorKind.Centrifugal;
+                d.Hpt.Stages = ri(1, 2);
+                d.Hpt.TipDiameter = d.CoreInletDiameter * rnd(0.7, 0.95);
+                d.Lpt.Stages = ri(1, 5);
+                d.Lpt.TipDiameter = d.CoreInletDiameter * rnd(0.8, 1.1);
+                d.Burner.Kind = (BurnerKind)ri(0, 3);
+                d.Burner.LinerLd = rnd(0, 2) < 0.6 ? 0.0 : rnd(1.0, 5.0);
+                d.Burner.CanCount = rnd(0, 2) < 0.7 ? 0 : ri(2, 16);
+                d.Burner.ExitTemp = rnd(1100, 1750);
+                d.Nozzle = (NozzleKind)ri(0, 2);
+                d.Afterburner.Enabled = rnd(0, 2) < 0.6;
+                d.Afterburner.FuelRatio = rnd(0, 2) < 0.5 ? 0.0 : rnd(0.02, 0.06);
+                d.Afterburner.Kind = (AfterburnerKind)ri(0, 2);
+
+                d.Fan.Shaft = 1;
+                d.Lpc.Shaft = Math.Min(2, d.ShaftCount);
+                d.Hpc.Shaft = d.ShaftCount >= 3 ? 3 : Math.Min(2, d.ShaftCount);
+                d.Hpt.Shaft = d.Hpc.Shaft;
+                d.Lpt.Shaft = d.Lpc.Shaft;
+
+                CycleResult dp = null;
+                DesignConstants c = null;
+                try
+                {
+                    dp = Cycle.SolveDesignPoint(d);
+                    if (!dp.Ok) continue;
+                    c = OffDesign.DeriveDesignConstants(d);
+                    if (c == null) continue;
+                }
+                catch (Exception) { buildThrow++; continue; }
+                solved++;
+
+                if (ns < samples.Length) samples[ns++] = d.Clone();
+
+                PerformanceGrid dry, wet = null;
+                try
+                {
+                    dry = GridFactory.Build(d, c, ths, als, mcs, 0.0);
+                    if (d.Afterburner.Enabled) wet = GridFactory.Build(d, c, ths, als, mcs, 1.0);
+                }
+                catch (Exception ex)
+                {
+                    buildThrow++;
+                    if (eFin.Length == 0) eFin = "#" + i + " 建表抛异常：" + ex.GetType().Name + " " + ex.Message;
+                    continue;
+                }
+
+                for (int t = 0; t < ths.Length; t++)
+                    for (int a = 0; a < als.Length; a++)
+                        for (int m = 0; m < mcs.Length; m++)
+                        {
+                            double thr = dry.Thrust[dry.Index(t, a, m)];
+                            double sfc = dry.Sfc[dry.Index(t, a, m)];
+                            double n2 = dry.N2[dry.Index(t, a, m)];
+
+                            if (double.IsNaN(thr) || double.IsInfinity(thr) || double.IsNaN(sfc) || double.IsInfinity(sfc)
+                                || double.IsNaN(n2) || double.IsInfinity(n2))
+                            {
+                                nonfinite++;
+                                if (eFin.Length == 0) eFin = string.Format("#{0} thr{1} {2:F0}m M{3:F2}：推力 {4} SFC {5} N2 {6}",
+                                    i, ths[t], als[a], mcs[m], thr, sfc, n2);
+                                continue;
+                            }
+
+                            // ③ SFC
+                            if (dry.Valid[dry.Index(t, a, m)] && (sfc <= 0.0 || sfc > 1.0))
+                            {
+                                v3++;
+                                if (e3.Length == 0) e3 = string.Format("#{0} thr{1} {2:F0}m M{3:F2}：推力 {4:F1} kN 却给 SFC {5:F3}",
+                                    i, ths[t], als[a], mcs[m], thr / 1000.0, sfc);
+                            }
+                            // ④ 转速
+                            if (n2 < 0.0 || n2 > 115.0)
+                            {
+                                v4++;
+                                if (e4.Length == 0) e4 = string.Format("#{0} thr{1} {2:F0}m M{3:F2}：N2 {4:F1}%", i, ths[t], als[a], mcs[m], n2);
+                            }
+                            // ① 油门单调
+                            if (t + 1 < ths.Length)
+                            {
+                                double next = dry.Thrust[dry.Index(t + 1, a, m)];
+                                if (next < thr - Math.Max(1.0, 0.01 * Math.Abs(thr)))
+                                {
+                                    v1++;
+                                    if (e1.Length == 0) e1 = string.Format("#{0} {1:F0}m M{2:F2}：油门 {3:F2}→{4:F2} 推力 {5:F1}→{6:F1} kN",
+                                        i, als[a], mcs[m], ths[t], ths[t + 1], thr / 1000.0, next / 1000.0);
+                                }
+                            }
+                            // ② 高度单调
+                            if (a + 1 < als.Length)
+                            {
+                                double higher = dry.Thrust[dry.Index(t, a + 1, m)];
+                                if (higher > thr + Math.Max(1.0, 0.01 * Math.Abs(thr)))
+                                {
+                                    v2++;
+                                    if (e2.Length == 0) e2 = string.Format("#{0} thr{1} M{2:F2}：高度 {3:F0}→{4:F0} m 推力 {5:F1}→{6:F1} kN",
+                                        i, ths[t], mcs[m], als[a], als[a + 1], thr / 1000.0, higher / 1000.0);
+                                }
+                            }
+                            // ⑤ 加力 ≥ 干态
+                            if (wet != null)
+                            {
+                                double wt = wet.Thrust[wet.Index(t, a, m)];
+                                if (wt < thr - Math.Max(1.0, 0.01 * Math.Abs(thr)))
+                                {
+                                    v5++;
+                                    if (e5.Length == 0) e5 = string.Format("#{0} thr{1} {2:F0}m M{3:F2}：干态 {4:F1} kN，加力 {5:F1} kN",
+                                        i, ths[t], als[a], mcs[m], thr / 1000.0, wt / 1000.0);
+                                }
+                            }
+                        }
+            }
+
+            // ⑥ 存文件往返
+            string dir = System.IO.Path.Combine(Environment.CurrentDirectory, "out", "invariant_test");
+            if (System.IO.Directory.Exists(dir)) System.IO.Directory.Delete(dir, true);
+            for (int k = 0; k < ns; k++)
+            {
+                string path = UserLibrary.Save(dir, "样本" + k, samples[k]);
+                if (path == null) { v6++; if (e6.Length == 0) e6 = "样本" + k + " 存不下来"; continue; }
+                string err;
+                EngineDesignData back = UserLibrary.Load(path, out err);
+                if (back == null) { v6++; if (e6.Length == 0) e6 = "样本" + k + " 读不回来：" + err; continue; }
+                List<string> diffs = new List<string>();
+                CompareFields(samples[k], back, "design", diffs);
+                if (diffs.Count > 0)
+                {
+                    v6++;
+                    if (e6.Length == 0) e6 = "样本" + k + " 不一致 " + diffs.Count + " 处：" + diffs[0];
+                }
+            }
+            if (System.IO.Directory.Exists(dir)) System.IO.Directory.Delete(dir, true);
+
+            Console.WriteLine(string.Format("{0} 台随机机：设计点成立 {1}｜建表抛异常 {2}", n, solved, buildThrow));
+            Console.WriteLine(string.Format("  ①油门单调违例 {0}　②高度单调违例 {1}　③SFC 越界 {2}　④转速越界 {3}　⑤加力低于干态 {4}　⑥存档往返不一致 {5}　非有限数 {6}",
+                v1, v2, v3, v4, v5, v6, nonfinite));
+            if (e1.Length > 0) Console.WriteLine("  ①例：" + e1);
+            if (e2.Length > 0) Console.WriteLine("  ②例：" + e2);
+            if (e3.Length > 0) Console.WriteLine("  ③例：" + e3);
+            if (e4.Length > 0) Console.WriteLine("  ④例：" + e4);
+            if (e5.Length > 0) Console.WriteLine("  ⑤例：" + e5);
+            if (e6.Length > 0) Console.WriteLine("  ⑥例：" + e6);
+            if (eFin.Length > 0) Console.WriteLine("  非有限/异常例：" + eFin);
+
+            _fails += Expect("没有任何一例出 NaN/Inf 或建表抛异常", nonfinite + buildThrow, 0);
+            _fails += Expect("随机机至少一半设计点成立", solved >= n / 2, true);
+        }

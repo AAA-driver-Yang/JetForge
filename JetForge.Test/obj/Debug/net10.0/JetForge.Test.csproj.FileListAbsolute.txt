@@ -1,0 +1,15 @@
+D:\KSP FEAT\JetForge\JetForge.Test\bin\Debug\net10.0\JetForge.Test.exe
+D:\KSP FEAT\JetForge\JetForge.Test\bin\Debug\net10.0\JetForge.Test.deps.json
+D:\KSP FEAT\JetForge\JetForge.Test\bin\Debug\net10.0\JetForge.Test.runtimeconfig.json
+D:\KSP FEAT\JetForge\JetForge.Test\bin\Debug\net10.0\JetForge.Test.dll
+D:\KSP FEAT\JetForge\JetForge.Test\bin\Debug\net10.0\JetForge.Test.pdb
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\JetForge.Test.GeneratedMSBuildEditorConfig.editorconfig
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\JetForge.Test.AssemblyInfoInputs.cache
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\JetForge.Test.AssemblyInfo.cs
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\JetForge.Test.csproj.CoreCompileInputs.cache
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\JetForge.Test.sourcelink.json
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\JetForge.Test.dll
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\refint\JetForge.Test.dll
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\JetForge.Test.pdb
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\JetForge.Test.genruntimeconfig.cache
+D:\KSP FEAT\JetForge\JetForge.Test\obj\Debug\net10.0\ref\JetForge.Test.dll

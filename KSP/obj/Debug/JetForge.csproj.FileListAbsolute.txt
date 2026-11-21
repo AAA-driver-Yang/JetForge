@@ -1,0 +1,5 @@
+D:\KSP FEAT\JetForge\KSP\bin\Debug\JetForge.dll
+D:\KSP FEAT\JetForge\KSP\obj\Debug\JetForge.csproj.AssemblyReference.cache
+D:\KSP FEAT\JetForge\KSP\obj\Debug\JetForge.GeneratedMSBuildEditorConfig.editorconfig
+D:\KSP FEAT\JetForge\KSP\obj\Debug\JetForge.csproj.CoreCompileInputs.cache
+D:\KSP FEAT\JetForge\KSP\obj\Debug\JetForge.dll
