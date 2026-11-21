@@ -4,7 +4,7 @@
 再由部件网络算出推力、耗油率、各轴转速与工作点，而不是"填性能反推曲线"。
 
 玩家文档在 [`INSTALL.md`](INSTALL.md)（安装与首次使用，英文版 [`INSTALL.en.md`](INSTALL.en.md)）
-与 `GameData/JetForge/README.md`（随发布包一起走）。逐项技术记录在 `docs/phase2-mod.md`（不在仓库里，只随开发进行）。
+与 `GameData/JetForge/README.md`（随发布包一起走）。
 
 ## 目录
 
@@ -33,10 +33,10 @@
 cp local.props.example local.props      # 然后把里面的路径改成你的
 
 # ② 环境变量
-export JETFORGE\_KSP\_DIR="C:/Program Files (x86)/Steam/steamapps/common/Kerbal Space Program"
+export JETFORGE\\\_KSP\\\_DIR="C:/Program Files (x86)/Steam/steamapps/common/Kerbal Space Program"
 
 # ③ 命令行
-dotnet build KSP/JetForge.csproj -c Release -p:KspDir="C:\\Program Files (x86)\\Steam\\steamapps\\common\\Kerbal Space Program"
+dotnet build KSP/JetForge.csproj -c Release -p:KspDir="C:\\\\Program Files (x86)\\\\Steam\\\\steamapps\\\\common\\\\Kerbal Space Program"
 ```
 
 然后：
@@ -55,9 +55,9 @@ dotnet run --project JetForge.Test/JetForge.Test.csproj -c Release --no-build
 ## 一条命令跑全部检查
 
 ```bash
-bash tools/run\_tests.sh            # 六步：构建 → 十六道闸门+回归 → 实机自检 → 出包 → 发布闸门 → 结论
-bash tools/run\_tests.sh --no-game  # 跳过实机自检（不启动游戏）
-bash tools/run\_tests.sh --ci       # 没有 KSP 的机器（CI 用这个）：闸门 + 回归
+bash tools/run\\\_tests.sh            # 六步：构建 → 十六道闸门+回归 → 实机自检 → 出包 → 发布闸门 → 结论
+bash tools/run\\\_tests.sh --no-game  # 跳过实机自检（不启动游戏）
+bash tools/run\\\_tests.sh --ci       # 没有 KSP 的机器（CI 用这个）：闸门 + 回归
 ```
 
 各道闸门管什么、账本文件怎么用，见 [`tools/README.md`](tools/README.md)。
@@ -83,7 +83,7 @@ Waterfall 与 RocketSoundEnhancement 是**硬依赖**：羽流只剩 Waterfall �
 ## 发布
 
 ```bash
-tools/make\_release.sh          # 产出 \_release/JetForge-<version>.zip 与解包目录
+tools/make\\\_release.sh          # 产出 \\\_release/JetForge-<version>.zip 与解包目录
 ```
 
 脚本会校验三处版本号一致（`Core/Version.cs`、`Properties/AssemblyInfo.cs`、`JetForge.version`），
