@@ -1,0 +1,10 @@
+<Project>
+  <!--
+    复制成本机的 local.props（文件名就叫 local.props，放在仓库根），把路径改成你的 KSP 安装目录。
+    这个文件不进版本库：别人的路径和你一定不同，写死进仓库等于别人一个都编不过。
+    也可以完全不建它，改用环境变量 JETFORGE_KSP_DIR 或命令行 -p:KspDir="..."。
+  -->
+  <PropertyGroup>
+    <KspDir>C:\Program Files (x86)\Steam\steamapps\common\Kerbal Space Program</KspDir>
+  </PropertyGroup>
+</Project>
