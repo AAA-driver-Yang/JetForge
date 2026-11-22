@@ -47,8 +47,6 @@ namespace JetForge.Core
         public string FailNote = "";
         /// <summary>累计喘振次数（每起一次算一次）。</summary>
         public int SurgeEvents;
-        /// <summary>累计过载应变量（g·s，超过 9 g 的部分才计）。</summary>
-        public double GStrain;
         /// <summary>峰值过载（g），给状态栏与日志。</summary>
         public double GPeak;
         /// <summary>烧穿之后还在继续超温的累计秒数。</summary>
@@ -76,7 +74,7 @@ namespace JetForge.Core
             JustBlownOut = false; ThrustScale = 1.0; FuelScale = 1.0;
             State = Loc.T("正常", "normal"); Cause = ""; Surging = false;
             Failed = false; FailNote = ""; SurgeEvents = 0;
-            GStrain = 0.0; GPeak = 0.0; BurnSeconds = 0.0; SpeedSeconds = 0.0;
+            GPeak = 0.0; BurnSeconds = 0.0; SpeedSeconds = 0.0;
             WasSurging = false;
             if (Book == null) Book = new FaultBook(); else Book.Reset();
         }
@@ -92,19 +90,10 @@ namespace JetForge.Core
     {
         /// <summary>累计多少次喘振算叶片疲劳断裂。</summary>
         public int SurgeEvents;
-        /// <summary>超过这个过载才开始累积应变（g）。</summary>
-        public double GBreak;
-        /// <summary>应变累计到这个值（g·s）算轴承过载断裂。</summary>
-        public double GBreakStrain;
         /// <summary>烧穿之后继续超温多少秒算叶片报废。</summary>
         public double BurnSeconds;
         /// <summary>持续超速多少秒算叶盘爆裂。</summary>
         public double SpeedSeconds;
-        /// <summary>过载损伤开不开。关掉之后 <see cref="GBreak"/> 完全不计（不是调到无穷大——
-        /// 无穷大会让"最差门槛"那行读数永远正常，看着像其实在计）。</summary>
-        public bool GDamageEnabled;
-        /// <summary>加强系统的比例（0~1），用于读数里说明这门槛为什么变高了。</summary>
-        public double GReinforce;
         /// <summary>这套门槛是怎么来的，一行字。</summary>
         public string Basis;
 
@@ -114,12 +103,8 @@ namespace JetForge.Core
             {
                 FailureLimits f = new FailureLimits();
                 f.SurgeEvents = 6;
-                f.GBreak = 9.0;
-                f.GBreakStrain = 1.2;
                 f.BurnSeconds = 20.0;
                 f.SpeedSeconds = 25.0;
-                f.GDamageEnabled = true;
-                f.GReinforce = 0.0;
                 f.Basis = Loc.T("缺省门槛", "default threshold");
                 return f;
             }
@@ -278,18 +263,13 @@ namespace JetForge.Core
 
             FailureLimits f = new FailureLimits();
             f.SurgeEvents = (int)Math.Round(3.0 + 10.0 * q);
-            f.GDamageEnabled = d == null || d.GDamage;
-            double reinforce = d != null ? Math.Min(Math.Max(d.GReinforce, 0.0), 1.0) : 0.0;
-            f.GReinforce = reinforce;
-            f.GBreak = (6.5 + 5.5 * q) * (1.0 + 1.0 * reinforce);
-            f.GBreakStrain = f.GBreak * 0.15;
+            // 过载不再进门槛：玩家明确要求"别因为拉 g 就把发动机弄坏"。
+            // 门槛只剩三条真会毁机的：喘振次数、烧穿后继续超温、持续超速。
             f.BurnSeconds = 8.0 + 32.0 * q;
             f.SpeedSeconds = 10.0 + 40.0 * q;
-            f.Basis = string.Format(Loc.T("裕度 {0:P0}｜年代 {1:F0} → 喘振 {2} 次、过载 {3:F1} g{4}、烧穿 {5:F0} s、超速 {6:F0} s", "margin {0:P0} | era {1:F0} gives {2} surges, {3:F1} g overload{4}, {5:F0} s burn-through, {6:F0} s overspeed"),
+            f.Basis = string.Format(Loc.T("裕度 {0:P0}｜年代 {1:F0} → 喘振 {2} 次、烧穿 {3:F0} s、超速 {4:F0} s", "margin {0:P0} | era {1:F0} gives {2} surges, {3:F0} s burn-through, {4:F0} s overspeed"),
                                     robust, d != null && d.Tech != null ? d.Tech.Year : 1960.0,
-                                    f.SurgeEvents, f.GBreak,
-                                    f.GDamageEnabled ? (reinforce > 0.001 ? string.Format(Loc.T("（已加强 {0:P0}）", "(reinforced {0:P0})"), reinforce) : "") : Loc.T("（过载损伤已关）", "(overload damage off)"),
-                                    f.BurnSeconds, f.SpeedSeconds);
+                                    f.SurgeEvents, f.BurnSeconds, f.SpeedSeconds);
             return f;
         }
 
@@ -459,10 +439,9 @@ namespace JetForge.Core
 
             FailureLimits lim = rt.Limits;
 
+            // 过载只记峰值，不计故障：玩家要的是"拉 g 不掉推力"。
+            // 峰值留着是因为它是读数——"这一趟最大拉过多少 g"能解释性能别的掉点。
             if (gLoad > rt.GPeak) rt.GPeak = gLoad;
-            // 过载损伤关掉时连应变都不攒：不然关掉开关只是"现在不炸"，
-            // 累积量还挂在存档里，重新打开就立刻炸——那叫请假不叫做完。
-            if (lim.GDamageEnabled && gLoad > lim.GBreak) rt.GStrain += (gLoad - lim.GBreak) * sdt;
 
             if (rt.Damage >= 1.0 && t4Limit > 0.0 && t4 > t4Limit) rt.BurnSeconds += sdt;
             if (risk.Overspeed > 0.50) rt.SpeedSeconds += sdt;
@@ -472,8 +451,6 @@ namespace JetForge.Core
                 fail = string.Format(Loc.T("压气机叶片疲劳断裂（累计 {0} 次喘振）", "compressor blade fatigue fracture ({0} surges accumulated)"), rt.SurgeEvents);
             else if (rt.BurnSeconds >= lim.BurnSeconds)
                 fail = string.Format(Loc.T("涡轮叶片烧穿（烧蚀后仍超温 {0:F0} 秒）", "turbine blade burn-through (still over temperature {0:F0} s after burning)"), rt.BurnSeconds);
-            else if (rt.GStrain >= lim.GBreakStrain)
-                fail = string.Format(Loc.T("转子轴承过载断裂（{0:F1} g 累计应变）", "rotor bearing overload fracture ({0:F1} g accumulated strain)"), rt.GStrain);
             else if (rt.SpeedSeconds >= lim.SpeedSeconds)
                 fail = string.Format(Loc.T("叶盘超速爆裂（持续 {0:F0} 秒）", "disc burst from overspeed ({0:F0} s sustained)"), rt.SpeedSeconds);
 
@@ -513,7 +490,7 @@ namespace JetForge.Core
             string s = string.Format(Loc.T("缺陷：{0}｜推力 ×{1:F2}｜油耗 ×{2:F2}｜损伤 {3:P0}", "Defect: {0} | thrust x{1:F2} | fuel flow x{2:F2} | damage {3:P0}"),
                 rt.State, rt.ThrustScale, rt.FuelScale, rt.Damage);
             if (rt.SurgeEvents > 0) s += string.Format(Loc.T("｜喘振 {0} 次", " | {0} surges"), rt.SurgeEvents);
-            if (rt.GPeak > rt.Limits.GBreak) s += string.Format(Loc.T("｜峰值 {0:F1} g（应变 {1:F2}）", " | peak {0:F1} g (strain {1:F2})"), rt.GPeak, rt.GStrain);
+            if (rt.GPeak > 0.0) s += string.Format(Loc.T("｜峰值 {0:F1} g", " | peak {0:F1} g"), rt.GPeak);
             if (rt.Cause.Length > 0) s += Loc.T("｜起因：", " | Cause:") + rt.Cause;
             return s;
         }

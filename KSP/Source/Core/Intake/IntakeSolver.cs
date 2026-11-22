@@ -42,6 +42,8 @@ namespace JetForge.Core
         public double CrossflowDeg;
         public double AvailableMassFlow;   // 给发动机的
         public double RequiredMassFlow;    // 按面马赫算"发动机要吃的"
+        /// <summary>这台发动机这一面在本次工况能吃多少（多件进气道时的上限，也是"需求"那个数）。</summary>
+        public double DemandMassFlow;
         /// <summary>老口径给设计点用的流量：喉道按 **来流总压** 算，缺省逐位与旧代码相同。</summary>
         public double LegacyMassFlow;
 

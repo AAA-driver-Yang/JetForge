@@ -263,7 +263,11 @@ namespace JetForge.Core
                 string folder = HistoryFolder(dir ?? Path.GetDirectoryName(path),
                                               Path.GetFileNameWithoutExtension(path));
                 EnsureDir(folder);
-                string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                // 毫秒必须进文件名。历史快照是按文件名排序的（见 History/Prune 的注释），
+                // 而"存一版、再存一版"在机器上常常落在同一秒里：秒级时间戳 + `-2` 后缀时，
+                // 字典序把 `stamp-2.cfg` 排在 `stamp.cfg` **前面**（'-' < '.'），
+                // 于是"最新的那份"在排序里跑到最旧的位置——回归里那条 1/N 才失败的红就是这么来的。
+                string stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff");
                 string dst = Path.Combine(folder, stamp + Extension);
                 int n = 2;
                 while (File.Exists(dst))

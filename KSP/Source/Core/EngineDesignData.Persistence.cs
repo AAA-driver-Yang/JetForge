@@ -76,8 +76,6 @@ namespace JetForge.Core
             node.SetValue("soundGain", F(SoundGain), true);
             node.SetValue("forceOwnBase", ForceOwnBaseSound ? "1" : "0", true);
             // 过载损伤开关与加强系统。老存档里没有这两键 = 默认开、没有加强，读数不变。
-            node.SetValue("gDamage", GDamage ? "1" : "0", true);
-            node.SetValue("gReinforce", F(GReinforce), true);
             // 慢车那两个旋钮已经撤了（慢车由求解器反解）。仍旧存读，只为两件事：
             // 老存档读得回来不报错、以及"每个公共字段都存得回来"那条回归仍然成立。
             node.SetValue("idleThrustFrac", F(IdleThrustFrac), true);
@@ -239,8 +237,6 @@ namespace JetForge.Core
             d.Detail = DetailSpec.Parse((int)GetD(node, "detail", 1.0));
             d.SoundGain = GetD(node, "soundGain", 1.0);
             d.ForceOwnBaseSound = GetD(node, "forceOwnBase", 0.0) > 0.5;
-            d.GDamage = GetB(node, "gDamage", true);
-            d.GReinforce = GetD(node, "gReinforce", 0.0);
             // 这里**不夹**范围：存读要能原样往返（回归会随机灌 86.125 这种值进来验）。
             // 夹在用的地方——Defects.For 与 MassCost.Estimate 各自夹一次，读数与物理共用一个口径。
             d.IdleThrustFrac = GetD(node, "idleThrustFrac", 0.0);

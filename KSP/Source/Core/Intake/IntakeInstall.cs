@@ -124,13 +124,19 @@ namespace JetForge.Core
         /// 物理上发动机面就那么一块，三件进气道是**分着供**这一份需求，多出来的溢流掉。
         /// </summary>
         public double DemandMassFlow;
+        /// <summary>最近一次 <see cref="ToSolution(double,double,double,double,double)"/> 交出去的那份解。
+        ///
+        /// 留着它有具体用途：界面要说"进气道供 120、发动机进口面只收 70"时，这两个数必须是
+        /// **同一次求解**的结果。§284 的封顶发生在 `ToSolution` 里面，外面拿不到中间值；
+        /// 而飞行员在 PAW 上点开零件的那一刻，正好是"上一次物理帧解出来的东西"，不是新算的。
+        /// </summary>
+        public IntakeSolution Last;
 
         private double _sumThroatCap;      // Σ 各件喉道的壅塞能力（kg/s）
         private double _sumCaptured;       // Σ 各件的摄取量（单件时就是解本身）
         private double _sumSpill;          // Σ 各件溢流
         private double _sumDrag;           // Σ 各件进气阻力
         private double _maxRequired;       // 各件"喂饱这台发动机"的需求里最大的那份（多件时的上限）
-        private double _maxLegacy;         // 各件按老口径（喉道+面马赫）算出来的流量里最大的那份
 
         private readonly List<IntakeUnit> _units = new List<IntakeUnit>();
         private readonly List<string> _names = new List<string>();
@@ -210,7 +216,7 @@ namespace JetForge.Core
             Distortion = 0.02; CrossflowDeg = 0.0;
             ThroatChoked = false; Spilling = false; Started = true;
             Warnings.Clear();
-            _sumThroatCap = 0.0; _sumCaptured = 0.0; _sumSpill = 0.0; _sumDrag = 0.0; _maxRequired = 0.0; _maxLegacy = 0.0; DemandMassFlow = 0.0;
+            _sumThroatCap = 0.0; _sumCaptured = 0.0; _sumSpill = 0.0; _sumDrag = 0.0; _maxRequired = 0.0; DemandMassFlow = 0.0;
 
             double wsum = 0.0;
             for (int i = 0; i < _units.Count; i++)
@@ -257,8 +263,6 @@ namespace JetForge.Core
                 _sumThroatCap += Gas.ChokedFlow(s.ThroatArea, s.Pt2, s.Tt2);
                 _sumCaptured += s.CapturedMassFlow;
                 if (s.RequiredMassFlow > _maxRequired) _maxRequired = s.RequiredMassFlow;
-                double lg = IntakeSolver.MassFlowAt(s.ThroatArea, s.Pt2, s.Tt2, s.FaceMach);
-                if (lg > _maxLegacy) _maxLegacy = lg;
                 _sumSpill += s.SpillageMassFlow;
                 _sumDrag += s.InletDrag;
                 AvailableMassFlow += s.AvailableMassFlow;
@@ -398,13 +402,21 @@ namespace JetForge.Core
 
             s.ThroatMargin = 0.0;
             s.RequiredMassFlow = CapturedMassFlow;
+            // 需求与供气要能同时看到：界面/日志说"进气道供 120、发动机要 70"时，
+            // 这两个数必须在同一份解上，否则读的是上一次刷新的残留。
+            s.DemandMassFlow = DemandMassFlow;
             s.LegacyMassFlow = IntakeSolver.MassFlowAt(ThroatArea, pt0, tt0, FaceMach)
                              * (1.0 - Math.Min(Math.Max(BleedFrac, 0.0), 0.25));
-            // 发动机面是最终上限：喉道再宽，进发动机的也就这么多。
-            // （单件、且发动机面本来就比喉道宽时这条不生效，所以老口径逐位不变；
-            //   多件时它把"N 份满流量"压回一份，就是这一步治住了"装几件推力乘几"。）
-            if (Count > 1 && _maxLegacy > 1e-6 && s.LegacyMassFlow > _maxLegacy) s.LegacyMassFlow = _maxLegacy;
-
+            // ── 多件：流量是各件之和，上限只由**发动机进口面**定 ──────────────
+            // 以前这里写的是 `if (Count > 1 && s.LegacyMassFlow > _maxLegacy) s.LegacyMassFlow = _maxLegacy;`
+            // ——把合计压回"最大那一件"的量。它当时是为了治"装几件推力乘几"，
+            // 代价却是：四件各能吞 30 kg/s、发动机要 70 kg/s 时，发动机只拿到 30，
+            // 推力明显上不去（玩家报的「供气 120、需要 70、达不到最大出力」就是这个）。
+            //
+            // 那个担心由下面的发动机面上限接手：发动机能吃多少由它自己那张面定，
+            // 与装了几件无关。所以这里不做任何本地上限——多件就是相加，
+            // 多出来的在唇口溢流（溢流量与阻力在 `Refresh` 里已经算过）。
+            // 注意：`Refresh` 里的 `DemandMassFlow` 是"这一面能吃多少"，量的是需求，不是供给。
             // ── §284 发动机进口面才是硬上限 ────────────────────────────────────
             // 上面那条只管"装了好几件"，一件超大进气道仍然按自己的喉道算流量：
             // 玩家把进气道做到 Ø7 m，`LegacyMassFlow` 就跟着变成七千多 kg/s，
@@ -438,6 +450,7 @@ namespace JetForge.Core
                 }
             }
             for (int i = 0; i < Warnings.Count; i++) s.Warn(Warnings[i]);
+            Last = s;
             return s;
         }
 

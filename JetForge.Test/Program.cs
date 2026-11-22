@@ -410,7 +410,7 @@ namespace JetForge.Test
             RunVariableGeometryCases();
 
             Console.WriteLine();
-            Console.WriteLine("== 第 77 段 燃料目录与过载损伤：换油换热值、加强系统增重换抗 g ==");
+            Console.WriteLine("== 第 77 段 过载不再弄坏发动机：只记峰值、门槛与加强系统一起撤干净 ==");
             RunGLimitCases();
 
             Console.WriteLine();
@@ -733,8 +733,17 @@ namespace JetForge.Test
                 ExpectTrue("缺 lengthAuto：老机器按部件算长度", d.LengthAuto);
                 ExpectEq("缺 control：1960 年代那台没有控制系统", d.Control, ControlKind.None);
                 ExpectEq("缺 gearRatio：风扇直驱", d.Fan.GearRatio, 1.0);
-                ExpectTrue("缺 gDamage：过载损伤默认开", d.GDamage);
-                ExpectEq("缺 gReinforce：没有加强", d.GReinforce, 0.0);
+                // 过载损伤整条撤掉了（玩家要求：拉 g 不该把发动机弄坏）。
+                // 老存档里那两个键读进来必须被无视，重存时也不许再写出去——
+                // 存档里躺着一个已经不起作用的开关，比没有这个开关更误导人。
+                ConfigNode oldG = new ConfigNode(EngineDesignData.NodeName);
+                oldG.SetValue("gDamage", "0", true);
+                oldG.SetValue("gReinforce", "1.0", true);
+                EngineDesignData fromG = EngineDesignData.Load(oldG);
+                ConfigNode reG = new ConfigNode(EngineDesignData.NodeName);
+                fromG.Save(reG);
+                ExpectTrue("老存档的 gDamage 键重存后消失", !reG.HasValue("gDamage"));
+                ExpectTrue("老存档的 gReinforce 键重存后消失", !reG.HasValue("gReinforce"));
 
                 // ---- 3. 撤掉的键被无视 ----
                 ExpectTrue("撤掉的 realfuel 不许被带进新存档", !SaveHadKey(d, "realfuel"));
@@ -2268,52 +2277,31 @@ namespace JetForge.Test
         }
 
         /// <summary>
-        /// 第 77 段：过载损伤（开关 + 加强系统的重量代价）。
+        /// 第 77 段：过载**不再**弄坏发动机（玩家要求整条撤掉），以及撤干净了没有。
         ///
-        /// 这两件事的共同点是"改一个数，别处全跟着变"：加强系统一打开，过载门槛上去了、
-        /// 重量也得上去。所以断言都成对写——只验"变大了"不够，还要验"变得对"（按比例）。
-        ///
-        /// RealFuels 那一套（燃料目录/换油换热值）已按要求撤除：燃料恒为原版 LiquidFuel、
-        /// 热值恒为 43.0 MJ/kg，`Gas.LhvJet` 也回到常量。
+        /// 这一段以前是在给「过载会累积轴承应变直到断裂」记账：开关、门槛、加强系统的
+        /// 重量代价，三样成对验。玩家明确不要那条规则之后，剩下能验的只有两件事：
+        /// ①12 g 硬拉多久都不许掉推力，但峰值要记下来（那是读数，不是判决）；
+        /// ②开关、门槛、加强重量三样必须一起消失——只删一半，界面上就会留一个拨了
+        /// 没反应的滑条，或者一个还在算重量的系数。
         /// </summary>
         private static void RunGLimitCases()
         {
-            // ---------- 过载损伤：开关与加强 ----------
-            EngineDesignData g = Presets.Build("J79");
-            g.GDamage = true; g.GReinforce = 0.0;
-            FailureLimits baseLim = Defects.For(g, null);
-            ExpectTrue("缺省是开着的", baseLim.GDamageEnabled);
-            Check("加强 0 时门槛就是基准值", baseLim.GBreak, 6.5 + 5.5 * Q(g, null), 1.0, "g");
-
-            g.GReinforce = 1.0;
-            FailureLimits strong = Defects.For(g, null);
-            Check("满加强：门槛翻倍", strong.GBreak / baseLim.GBreak, 2.0, 1.0, "×");
-            Check("满加强：应变额度也跟着翻", strong.GBreakStrain / baseLim.GBreakStrain, 2.0, 1.0, "×");
-
-            g.GDamage = false;
-            FailureLimits off = Defects.For(g, null);
-            Expect("关掉之后标记为不计", off.GDamageEnabled, false);
-
-            // 关掉之后飞十个 g 也不该攒应变（造例：直接用 Step 顶过去）
+            // ① 过载只记峰值，不计故障
             DefectRuntime rt = new DefectRuntime();
-            Defects.Configure(rt, off);
-            for (int i = 0; i < 40; i++) Defects.Step(new Defects.Risk(), rt, 0.1, 1.0, 900.0, 1800.0, 0.02, 1000.0, 12.0, false);
-            Check("过载损伤关掉：12 g 飞 4 秒不攒应变", rt.GStrain, 0.0, 1.0, "g·s");
-            Expect("关掉之后也炸不了", rt.Failed, false);
+            Defects.Configure(rt, FailureLimits.Default);
+            for (int i = 0; i < 400; i++)
+                Defects.Step(new Defects.Risk(), rt, 0.1, 1.0, 900.0, 1400.0, 0.02, 0.0, 12.0, false);
+            Check("12 g 硬拉 40 秒：峰值记成 12", rt.GPeak, 12.0, 0.5, "g");
+            Expect("12 g 硬拉 40 秒：不许断推力", rt.Failed, false);
+            ExpectEq("12 g 硬拉 40 秒：推力不打折", rt.ThrustScale, 1.0);
 
-            rt = new DefectRuntime();
-            Defects.Configure(rt, baseLim);
-            for (int i = 0; i < 40; i++) Defects.Step(new Defects.Risk(), rt, 0.1, 1.0, 900.0, 1800.0, 0.02, 1000.0, 12.0, false);
-            ExpectTrue("开着的时候 12 g 飞 4 秒必须攒出应变", rt.GStrain > 0.0);
-
-            // ---------- 加强系统的重量代价 ----------
-            EngineDesignData m0 = Presets.Build("J79"); m0.GReinforce = 0.0;
-            EngineDesignData m1 = Presets.Build("J79"); m1.GReinforce = 1.0;
-            MassBreakdown b0 = MassCost.Estimate(m0);
-            MassBreakdown b1 = MassCost.Estimate(m1);
-            ExpectTrue("满加强会变重", b1.TotalDry > b0.TotalDry);
-            double gain = (b1.TotalDry - b0.TotalDry) / Math.Max(b0.TotalDry, 1.0);
-            ExpectTrue("变重的幅度在 5%~15%（不是白送的强度）", gain > 0.05 && gain < 0.15);
+            // ② 门槛里不许再有过载这一项（撤掉的机制不许"半条留着"）
+            FailureLimits lim = FailureLimits.Default;
+            string basis = lim.Basis ?? "";
+            ExpectTrue("门槛说明里不再提过载", basis.IndexOf("过载", StringComparison.Ordinal) < 0
+                                            && basis.IndexOf("overload", StringComparison.OrdinalIgnoreCase) < 0);
+            ExpectTrue("门槛只剩真会毁机的那几条", lim.SurgeEvents > 0 && lim.BurnSeconds > 0 && lim.SpeedSeconds > 0);
         }
 
         /// <summary>
@@ -2978,14 +2966,33 @@ namespace JetForge.Test
                    Math.Abs(at16.Tpr - at0.Tpr) > 1e-3, true);
             Check("ToSolution 的捕获面积与合计一致", at16.CaptureArea, ins2.CaptureArea, 0.5, "m²");
             Expect("ToSolution 的 LegacyMassFlow 为正", at0.LegacyMassFlow > 0.0, true);
-            // 以前这条比"可用流量"（两件的喉道能力之和），那等于把"两件各喂饱一次"当成了正确行为。
-            // 正确口径：多件共喂一台发动机，设计点流量就是**一件**的量，多出来的溢流。
-            Check("多件的设计点流量不重复计入（等同单件）", at0.LegacyMassFlow,
-                  ins1.ToSolution(0.0, 0.0).LegacyMassFlow, 2.0, "kg/s");
-            Check("多件的摄取量与单件同量级（不是两件相加）", at0.CapturedMassFlow,
-                  ins1.ToSolution(0.0, 0.0).CapturedMassFlow, 5.0, "kg/s");
-            Expect("多件时确实溢流了（多出来的气进不了发动机）", at0.SpillageMassFlow > 0.0, true);
-
+            // 这里原本钉的是「多件的设计点流量等同单件」——那是老口径（把合计压回最大那一件），
+            // 代价是四件各能吞 30 kg/s、发动机要 70 kg/s 时发动机只拿到 30（玩家报的供气 120 却推不满）。
+            // 现在：多件的流量是**合计**，上限是发动机这一面能吃的量。
+            double soloOne = ins1.ToSolution(0.0, 0.0).LegacyMassFlow;
+            // 这里原本钉的是「多件的设计点流量等同单件」——那是老口径（把合计压回最大那一件），
+            // 代价是四件各能吞 30 kg/s、发动机要 70 kg/s 时发动机只拿到 30（玩家报的供气 120 却推不满）。
+            // 现在：多件的流量是各件之和，上限只由发动机进口面定。
+            // ① 没给发动机面时：两件就是两件之和（不塌回一件）。
+            Check("多件的设计点流量是两件之和（不再塌回一件）", at0.LegacyMassFlow, soloOne * 2.0, 5.0, "kg/s");
+            // ② 给了窄发动机面（Ø0.5）：被这一面削住，削多少就是这一面能过的量。
+            IntakeSolution capped = ins2.ToSolution(0.0, 0.0, Math.PI * 0.25 * 0.5 * 0.5, double.NaN, double.NaN);
+            Expect("多件遇到窄发动机面时被削住", capped.FlowCappedByEngineFace, true);
+            Check("削到的量就是发动机面能过的量", capped.LegacyMassFlow, capped.EngineFaceCapMassFlow, 0.5, "kg/s");
+            Expect("削过之后远少于两件之和（多出来的溢流）", capped.LegacyMassFlow < at0.LegacyMassFlow * 0.5, true);
+            // ③ 四件 + 宽发动机面（Ø1.2）：发动机拿到的是「这一面能吃的量」，不是一件的量。
+            List<IntakeUnit> four = new List<IntakeUnit>();
+            for (int q = 0; q < 4; q++) four.Add(new IntakeUnit(axial, 1.2, "件" + (q + 1)));
+            IntakeInstall insFour = IntakeInstall.Aggregate(four, tech, 0.0, 0.0);
+            IntakeSolution four0 = insFour.ToSolution(0.0, 0.0, Math.PI * 0.25 * 1.2 * 1.2, double.NaN, double.NaN);
+            Check("四件的流量按发动机这一面收", four0.LegacyMassFlow, four0.EngineFaceCapMassFlow, 0.5, "kg/s");
+            Expect("四件给的流量明显多于一件（旧口径只给一件的量）", four0.LegacyMassFlow > soloOne * 1.5, true);
+            // ④ 交给界面的那份解就是刚算出来的这份：PAW 上写"供气 120、进口面只收 70"时，
+            //    两个数必须同源。以前供气来自上一帧刷新、需求来自这次求解，玩家看到的是两个时代。
+            Expect("最后一份解留在安装体上（界面就读它）", insFour.Last.Valid, true);
+            Check("留在安装体上的供气量就是刚交出去的那份", insFour.Last.LegacyMassFlow, four0.LegacyMassFlow, 1e-9, "kg/s");
+            Check("留在安装体上的需求量也是同一份", insFour.Last.DemandMassFlow, four0.DemandMassFlow, 1e-9, "kg/s");
+            Expect("这一份标着被发动机面削过", insFour.Last.FlowCappedByEngineFace, true);
             // ---- ⑥ 存档往返（零件与整机共用一份键名）----
             IntakeSpec src = new IntakeSpec();
             src.Kind = IntakeKind.Ramp;
@@ -7208,15 +7215,31 @@ namespace JetForge.Test
             }
             ExpectEq("历史只留 5 份", UserLibrary.History(dir, hname).Count, 5);
 
+            // 「只留 5 份」留的必须是**最近 5 次覆盖**，不是随便 5 份。
+            // 这条以前是软的：快照名用秒级时间戳，同一秒里的第二份靠 `-2` 后缀区分，
+            // 而字典序把 `stamp-2.cfg` 排在 `stamp.cfg` 前面（'-' < '.'），
+            // 于是最旧那份反倒被当成最新留在目录里，1/N 次跑法里那条"恢复后是 Ø0.60"就红一次。
+            // 现在名字带毫秒，字典序就是时间序，这条断言才有意义。
+            List<UserDesignEntry> before = UserLibrary.History(dir, hname);
+            double newest = 0.0, oldest = 99.0;
+            for (int i = 0; i < before.Count; i++)
+            {
+                EngineDesignData h = UserLibrary.Load(before[i].Path, out rerr);
+                if (h == null) continue;
+                if (i == 0) newest = h.Fan.Diameter;
+                if (h.Fan.Diameter < oldest) oldest = h.Fan.Diameter;
+            }
+            Check("最新那份历史是上一次覆盖前的样子（Ø0.84）", newest, 0.84, 0.005, "m");
+            Expect("被挤掉的是最旧那份（Ø0.60 已经不在历史里）", oldest > 0.70, true);
+
             // 恢复：回到某一份，而且当前状态也被留了一份——「恢复」本身也可能点错，
             // 那一下如果不可逆，这个按钮就变成了删除键。
-            List<UserDesignEntry> before = UserLibrary.History(dir, hname);
             string snap = before[0].Path;
             string rp = UserLibrary.Restore(dir, hname, snap, out rerr);
             Expect("恢复成功", rp != null, true);
             EngineDesignData restored = rp != null ? UserLibrary.Load(rp, out rerr) : null;
             Expect("恢复后读得回来", restored != null, true);
-            if (restored != null) ExpectEq("恢复后的直径来自那份快照", Math.Round(restored.Fan.Diameter, 2), 0.60);
+            if (restored != null) ExpectEq("恢复后的直径就是那份快照上的数", Math.Round(restored.Fan.Diameter, 2), Math.Round(newest, 2));
             ExpectEq("恢复前把当前状态也留了底（仍 5 份，最旧那份被挤掉）",
                      UserLibrary.History(dir, hname).Count, 5);
             Console.WriteLine("存档历史：留 5 份｜恢复自 " + System.IO.Path.GetFileNameWithoutExtension(snap));

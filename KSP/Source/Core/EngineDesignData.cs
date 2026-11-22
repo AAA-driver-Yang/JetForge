@@ -431,16 +431,6 @@ namespace JetForge.Core
         /// 三层永远自己放，这个开关没有意义了；字段留着只为读旧存档不报错。</summary>
         public bool ForceOwnBaseSound = false;
 
-        /// <summary>过载（g 值）会不会把转子轴承弄坏。缺省开——这是"别拿战斗机做 12 g 桶滚"
-        /// 的那条约束，关掉之后只有喘振/超温/超速还会弄坏机器。</summary>
-        public bool GDamage = true;
-
-        /// <summary>加强系统：0 = 没有，1 = 满配。
-        ///
-        /// 它同时改两件事，而且方向是相反的——这正是它作为"设计选择"的意义：
-        /// 过载耐受 ×(1 + 1.0×r)，代价是结构重量 +12%×r。想拿高 g 机动就得付出重量，
-        /// 想轻就得老实飞。0 时两边都不动，老存档与老读数逐位不变。</summary>
-        public double GReinforce = 0.0;
 
         /// <summary>（已停用）慢车推力占比与慢车 N2 目标——这两个旋钮撤掉了。
         ///

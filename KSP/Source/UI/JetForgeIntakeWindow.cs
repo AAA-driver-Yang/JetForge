@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using JetForge.Core;
 using JetForge.KSP;
@@ -481,6 +481,14 @@ namespace JetForge.UI
                 m.Spec = _edit.Clone();
                 m.exitDiameter = _target.exitDiameter;
                 m.techName = _target.techName;
+                // 长度也算"同款"的一部分：只抄型线不抄长度，网格会按旧长度重新放样，
+                // 看着就是"粗细改了、长短没改"。
+                m.length = _editLength;
+                // 抄完必须重建网格。这句以前漏了：字段都改了、面板读数也变了，
+                // 但机库里那几件外形还是旧的——玩家看到的就是"同款一起改没生效"，
+                // 连同顺手报的"对称件不跟着镜像变"其实是同一个毛病：
+                // 对偶件走 `SymmetryCopy.Intake`（它重建），同名件走这里（没重建）。
+                m.RefreshMesh();
             }
         }
 

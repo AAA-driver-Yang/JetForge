@@ -1544,24 +1544,22 @@ namespace JetForge.Diagnostics
                 // 燃料口径：恒为原版煤油（RealFuels 那一套已撤除）。
                 Log(string.Format("  燃料：原版 LiquidFuel｜热值 {0:F1} MJ/kg", JetForge.Core.Gas.LhvJet / 1e6));
 
-                // 结构：过载开关与加强系统的门槛/重量成对变化（增重换抗 g）。
+                // 结构：过载只记峰值，不计故障。
+                // 这个开关原来是"过载会累积轴承应变直到断裂"，玩家明确不要它：
+                // 拉 g 是飞行员的事，不该由发动机替人挨罚。现在 12 g 连拉十几秒，
+                // 推力一点不掉，只有"峰值"这个读数留下来解释别处的性能。
                 {
-                    JetForge.Core.EngineDesignData sd = JetForge.Core.Presets.Build("J79");
-                    sd.GDamage = true; sd.GReinforce = 0.0;
-                    JetForge.Core.FailureLimits lo = JetForge.Core.Defects.For(sd, null);
-                    JetForge.Core.MassBreakdown ml = JetForge.Core.MassCost.Estimate(sd);
-                    sd.GReinforce = 1.0;
-                    JetForge.Core.FailureLimits hi = JetForge.Core.Defects.For(sd, null);
-                    JetForge.Core.MassBreakdown mh = JetForge.Core.MassCost.Estimate(sd);
-                    sd.GDamage = false;
-                    JetForge.Core.FailureLimits off = JetForge.Core.Defects.For(sd, null);
-                    Log(string.Format("  结构：过载损伤 {0}｜门槛 {1:F1} g → 加强满配 {2:F1} g｜干重 {3:F0} → {4:F0} kg（+{5:P1}）",
-                        off.GDamageEnabled ? "开" : "关", lo.GBreak, hi.GBreak, ml.TotalDry, mh.TotalDry,
-                        (mh.TotalDry - ml.TotalDry) / System.Math.Max(ml.TotalDry, 1.0)));
-                    Log(string.Format("  断言：加强抬门槛 {0}｜加强增重 {1}｜关掉后标记为不计 {2}",
-                        hi.GBreak > lo.GBreak * 1.5 ? "对" : "不对",
-                        mh.TotalDry > ml.TotalDry ? "对" : "不对",
-                        off.GDamageEnabled ? "不对" : "对"));
+                    JetForge.Core.DefectRuntime gRt = new JetForge.Core.DefectRuntime();
+                    JetForge.Core.Defects.Configure(gRt, JetForge.Core.FailureLimits.Default);
+                    for (int i = 0; i < 400; i++)
+                        JetForge.Core.Defects.Step(new JetForge.Core.Defects.Risk(), gRt, 1.0 / 30.0,
+                            1.0, 900.0, 1400.0, 0.02, 0.0, 12.0);
+                    Log(string.Format("  结构：12 g 连拉 13 秒 → {0}｜峰值 {1:F1} g｜推力 ×{2:F2}",
+                        gRt.Failed ? gRt.FailNote : "未断", gRt.GPeak, gRt.ThrustScale));
+                    Log(string.Format("  断言：过载不断推 {0}｜峰值记下来了 {1}｜推力不打折 {2}",
+                        gRt.Failed ? "不对" : "对",
+                        gRt.GPeak >= 9.0 ? "对" : "不对",
+                        gRt.ThrustScale > 0.99 ? "对" : "不对"));
                 }
 
                 // 可燃窗口：贫油 0.005、富油按设计点拉开 1.9 倍（地板 0.040）。

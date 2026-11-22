@@ -155,14 +155,6 @@ namespace JetForge.Core
             m.AccessoryGearbox = m.Accessory * 0.45;
             m.TotalDry = sub + m.Accessory;
 
-            // ---------- 加强系统 ----------
-            // 想扛更高的 g 就得让机匣/轴粗一圈：满配按结构重量的 12% 计价。
-            // 这 12% 是"看得见的代价"——玩家调高抗过载时必须能在重量读数里看到它变重了，
-            // 否则那个滑条就变成"免费的强度"。
-            double reinforce = d.GReinforce;
-            if (reinforce < 0.0) reinforce = 0.0;
-            if (reinforce > 1.0) reinforce = 1.0;
-            if (reinforce > 0.0) m.TotalDry += sub * 0.12 * reinforce;
 
             // ---------- 推重比与造价 ----------
             CycleResult r = Cycle.SolveDesignPoint(d);

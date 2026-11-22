@@ -359,7 +359,8 @@ namespace JetForge.Diagnostics
                     derateBad < 0.781 ? "对" : "不对",
                     derateBad >= 0.60 ? "对" : "不对"));
 
-                // ---- 故障：四条路各走一遍，必须真的断推力 ----
+                // ---- 故障：只剩两条路会真的断推力（喘振 / 烧穿）----
+                // 过载那条已按玩家要求整条撤掉：g 值只记峰值，不进故障门槛。
                 DefectRuntime surgeRt = new DefectRuntime();
                 for (int i = 0; i < 40; i++)
                     Defects.Step(new Defects.Risk(), surgeRt, 1.0 / 30.0, 1.0, 900.0, 1400.0, 0.02, 0.0,
@@ -372,14 +373,14 @@ namespace JetForge.Diagnostics
                 // 烧穿是两步：先把损伤烧到 1（超温 12% → 90 秒），再在损伤状态下继续超温 20 秒。
                 // 我第一版只跑了 40 秒，看到"未断"还以为代码坏了——先量一下速率再定循环长度。
                 for (int i = 0; i < 4000; i++) Defects.Step(hot, burnRt, 1.0 / 30.0, 1.0, 1350.0, 1200.0, 0.02, 0.0);
-                Log(string.Format("  故障：喘振 {0} 次 → {1}｜12g 累计 {2:F2} → {3}｜烧蚀后超温 133 s → {4}",
+                Log(string.Format("  故障：喘振 {0} 次 → {1}｜12 g 拉 400 帧 → {2}（峰值 {3:F1} g）｜烧蚀后超温 133 s → {4}",
                     surgeRt.SurgeEvents, surgeRt.Failed ? surgeRt.FailNote : "未断",
-                    gRt.GStrain, gRt.Failed ? gRt.FailNote : "未断",
+                    gRt.Failed ? gRt.FailNote : "未断", gRt.GPeak,
                     burnRt.Failed ? burnRt.FailNote : "未断"));
-                Log(string.Format("  断言：三条路都断推 {0}｜断了以后推力为 0 {1}｜原因不是空串 {2}",
-                    (surgeRt.Failed && gRt.Failed && burnRt.Failed) ? "对" : "不对",
-                    (surgeRt.ThrustScale < 1e-9 && gRt.ThrustScale < 1e-9 && burnRt.ThrustScale < 1e-9) ? "对" : "不对",
-                    (surgeRt.FailNote != null && surgeRt.FailNote.Length > 0) ? "对" : "不对"));
+                Log(string.Format("  断言：喘振与烧穿都断推 {0}｜断了以后推力为 0 {1}｜12 g 不断推、推力不打折 {2}",
+                    (surgeRt.Failed && burnRt.Failed) ? "对" : "不对",
+                    (surgeRt.ThrustScale < 1e-9 && burnRt.ThrustScale < 1e-9) ? "对" : "不对",
+                    (!gRt.Failed && gRt.ThrustScale > 0.99) ? "对" : "不对"));
 
                 // ---- 门槛由设计推，不是写死 ----
                 // 同一套断法，差机器应该更早坏。这里造一台"级负荷紧、裕度小"的机器，
@@ -397,14 +398,15 @@ namespace JetForge.Diagnostics
                 Log(string.Format("  故障门槛（按设计推）：本机 {0}", goodLim.Basis));
                 Log(string.Format("  差机器（HPC {0} 级 × {1:F2} m）：{2}",
                     rough.Hpc.Stages, rough.Hpc.TipDiameter, roughLim.Basis));
-                Log(string.Format("  断言：好机器门槛不比差机器松 {0}｜门槛都落在 3~13 次 / 6.5~12 g {1}",
-                    (goodLim.SurgeEvents >= roughLim.SurgeEvents && goodLim.GBreak >= roughLim.GBreak - 1e-9) ? "对" : "不对",
+                Log(string.Format("  断言：好机器门槛不比差机器松 {0}｜门槛都落在 3~13 次 / 8~40 s {1}",
+                    (goodLim.SurgeEvents >= roughLim.SurgeEvents && goodLim.BurnSeconds >= roughLim.BurnSeconds - 1e-9) ? "对" : "不对",
                     (goodLim.SurgeEvents >= 3 && goodLim.SurgeEvents <= 13
-                     && goodLim.GBreak >= 6.5 - 1e-9 && goodLim.GBreak <= 12.0 + 1e-9) ? "对" : "不对"));
-                // 同样 12 g 猛拉：差机器更早断
+                     && goodLim.BurnSeconds >= 8.0 - 1e-9 && goodLim.BurnSeconds <= 40.0 + 1e-9) ? "对" : "不对"));
+                // 门槛松不得：同样的喘振频率去揍差机器，先断的必须是它
                 for (int i = 0; i < 400 && !roughRt.Failed; i++)
-                    Defects.Step(new Defects.Risk(), roughRt, 1.0 / 30.0, 1.0, 900.0, 1400.0, 0.02, 0.0, 12.0);
-                Log(string.Format("  同样 12 g：差机器 {0}", roughRt.Failed ? roughRt.FailNote : "未断"));
+                    Defects.Step(new Defects.Risk(), roughRt, 1.0 / 30.0, 1.0, 900.0, 1400.0, 0.02, 0.0,
+                                 0.0, i % 3 == 0);
+                Log(string.Format("  同样每三帧一次喘振：差机器 {0}", roughRt.Failed ? roughRt.FailNote : "未断"));
                 Log(string.Format("  断言：差机器先断 {0}", roughRt.Failed ? "对" : "不对"));
 
                 // ---- 缺陷三级台账：同一缺陷不重复罚 ----

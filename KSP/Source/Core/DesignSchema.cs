@@ -108,12 +108,6 @@ namespace JetForge.Core
             o.Add(T("DesignName", Loc.T("整机", "Whole engine"), Loc.T("备注名", "Label"), Loc.T("只是名字，出现在存档与预设列表里", "A name only; it shows up in saves and the preset list.")));
 
             // ---- 结构强度 ----
-            o.Add(T("GDamage", Loc.T("结构", "Structure"), Loc.T("过载损伤", "G damage"),
-                Loc.T("关掉之后机动过载不再累积轴承应变（喘振/超温/超速照样会弄坏机器）。缺省开——真机的转子确实怕持续高 g",
-                    "Off means manoeuvre g no longer accumulates bearing strain (surge, overtemperature and overspeed still break things). On by default - real rotors really do dislike sustained high g.")));
-            o.Add(N("GReinforce", Loc.T("结构", "Structure"), Loc.T("加强系统", "Reinforcement"), 0.0, 1.0, 0.05, "",
-                Loc.T("0 = 没有，1 = 满配。过载耐受 ×(1+r)，代价是结构重量 +12%×r：想拿高 g 机动就得付重量，想轻就得老实飞",
-                    "0 = none, 1 = full. G tolerance x(1+r) for +12%xr structural mass: high-g manoeuvres cost weight, staying light means flying gently.")));
 
             // ---- 进气道：不给选项 ----
             //

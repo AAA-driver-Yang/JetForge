@@ -55,6 +55,13 @@ namespace JetForge.KSP
             }
             sb.AppendFormat(Loc.T("干推力 {0:F1} kN　SFC {1:F4} kg/(N·h)\n", "Dry {0:F1} kN　SFC {1:F4} kg/(N·h)\n"), DpThrust() / 1000.0, DpSfc());
             sb.AppendFormat(Loc.T("增压比 {0:F2}　涵道比 {1:F2}　进气 {2:F1} kg/s\n", "OPR {0:F2}　BPR {1:F2}　air {2:F1} kg/s\n"), DpOpr(), DpBpr(), DpMdot());
+            // 供气与需求分开写：玩家报过"面板写着供气 120、发动机要 70，可推力就是上不去"，
+            // 那时这两个数根本不同源（一个来自上一帧刷新、一个来自这次求解）。
+            // 现在两个数都取自同一份解，封顶了就直说多出来的去哪了。
+            if (_install != null && _install.Present && _install.Last.Valid && _install.Last.LegacyMassFlow > 0.0)
+                sb.AppendFormat(Loc.T("进气道供 {0:F1} kg/s｜这台机器的进口面最多收 {1:F1} kg/s{2}\n", "intake supplies {0:F1} kg/s | this engine's face takes at most {1:F1} kg/s{2}\n"),
+                    _install.Last.LegacyMassFlow, _install.Last.DemandMassFlow,
+                    _install.Last.FlowCappedByEngineFace ? Loc.T("（多出来的在唇口溢流）", " (the rest spills at the lip)") : "");
             sb.AppendFormat("N1 {0:F0}%　N2 {1:F0}%　EGT {2:F0} K\n", DpN1(), DpN2(), DpT5());
             if (HasAfterburner())
                 sb.AppendFormat(Loc.T("加力 T7 {0:F0} K\n", "afterburner T7 {0:F0} K\n"), DpT7());
