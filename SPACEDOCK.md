@@ -84,6 +84,13 @@ JetForge 反过来：它问你级数、叶尖直径、轴的布置、进气道�
 
 ### 更新日志
 
+**1.0.1 — 供气与过载的修正**
+
+* 多件 / 对称件的进气道流量改为各件相加，上限只听发动机进口面
+* 同款、镜像件改一件，外形跟着重建
+* 零件说明里"供气"与"进口面最多收"两个数同源
+* 过载不再弄坏发动机（只记峰值）
+
 **1.0.0 — 首个公开版本**
 
 * 参数化发动机设计器，34 条判据实时报警
@@ -192,6 +199,13 @@ When reporting a problem, please attach both logs:
 Source and issue tracker: https://github.com/AAA-driver-Yang/JetForge
 
 ### Changelog
+
+**1.0.1 — supply and overload fixes**
+
+* Several or symmetric intakes now add their flow; only the engine face caps it
+* Editing one of identical or mirrored intakes rebuilds their meshes too
+* Supply and "most the engine face can take" now come from the same number
+* Overload no longer damages the engine (peak is still recorded)
 
 **1.0.0 — first public release**
 

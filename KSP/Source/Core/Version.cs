@@ -12,7 +12,7 @@ namespace JetForge.Core
     public static class JetForgeVersion
     {
         /// <summary>语义化版本：主.次.修订。</summary>
-        public const string Number = "1.0.0";
+        public const string Number = "1.0.1";
 
         /// <summary>给界面标题用的短串。</summary>
         public const string Display = "v" + Number;

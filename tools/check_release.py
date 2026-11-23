@@ -498,11 +498,18 @@ def check_note_sha(zip_path):
     为什么单列一条：那个哈希是**手抄**进 `_release/GITHUB_RELEASE-<ver>.md` 的，
     每重出一版包就旧一次，而没有任何东西会因此变红——玩家照着说明校验会得到"不匹配"，
     于是怀疑包被动过手脚。写时准确、之后每轮都在变旧，这种文档只能靠闸门管。
-    md 不存在就不查（不是每个人都写发布说明）。
+    md 不存在就是红：以前这里写的是"不存在就不查（不是每个人都写发布说明）"，
+    结果升 1.0.1 那次 `make_release.sh` 只**同步**已存在的说明、不会**新建**它，
+    于是闸门在没有说明可查的情况下照样变绿——一条"没东西可查就放过"的判据，
+    在真正需要它的那一版上恰好什么也没拦。
+    说明一版写一次，缺了就是缺了。
     """
     ver = os.path.basename(zip_path)[len("JetForge-"):-len(".zip")]
     md = os.path.join(RELEASE, "GITHUB_RELEASE-%s.md" % ver)
     if not os.path.exists(md):
+        fail("出了 %s 的包，却没有 _release/GITHUB_RELEASE-%s.md："
+             "发布说明不会自己长出来，手抄的 sha256 也就没人核"
+             % (os.path.basename(zip_path), ver))
         return
     with open(md, "r", encoding="utf-8-sig", errors="replace") as f:
         text = f.read()

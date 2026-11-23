@@ -5,6 +5,27 @@ This file records only what a player can notice. Item-by-item technical detail l
 
 > 中文版见 [CHANGELOG.md](CHANGELOG.md)。
 
+## 1.0.1 — intake supply, shape sync and overload wear
+
+### Fixed
+
+- **Multiple or symmetric intakes supplied only one intake's worth of air**: two intakes used to feed the
+  engine as if there were one — the panel claimed 120 kg/s while the engine received about thirty.
+  Flow is now the sum of all units, capped only by the **engine's own face area**: fitting more intakes
+  does not buy free thrust, and it no longer under-feeds either.
+- **Editing one of a set of identical or mirrored intakes left the others unchanged**: the numbers moved
+  but the mesh in the hangar did not.
+- **"Supply" and "demand" came from different numbers**: the part info now prints both on one line —
+  supply in kg/s and the most this engine's face can take — with a note that the excess spills at the lip.
+
+### Changed
+
+- **Overload no longer breaks the engine**: pulling g only records a peak, it no longer counts toward a
+  failure threshold and the "rotor bearing overload fracture" can no longer happen. The
+  "structural / overload damage" and "reinforcement" options are gone together with the reinforcement mass
+  penalty; what can still destroy an engine is surge count, sustained over-temperature after a burn-through,
+  and sustained overspeed. Old saves that contain those two keys simply ignore them.
+
 ## 1.0.0 — first release
 
 ### Added
