@@ -3,6 +3,8 @@
 参数化喷气发动机与进气道的 KSP 插件。**画几何 → 算热力**：先定尺寸、级数、截面与流道，
 再由部件网络算出推力、耗油率、各轴转速与工作点，而不是"填性能反推曲线"。
 
+介绍文档[`SPACEDOCK.md`](SPACEDOCK.md)
+
 玩家文档在 [`INSTALL.md`](INSTALL.md)（安装与首次使用，英文版 [`INSTALL.en.md`](INSTALL.en.md)）
 与 `GameData/JetForge/README.md`（随发布包一起走）。逐项技术记录在 `docs/phase2-mod.md`（不在仓库里，只随开发进行）。
 

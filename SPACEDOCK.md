@@ -18,12 +18,13 @@ JetForge 反过来：它问你级数、叶尖直径、轴的布置、进气道�
 
 **发动机设计器**
 压气机、涡轮、燃烧室、喷管逐项填，34 条运行状态实时显示出来（温度、转速、喘振、堵塞、轴功率、质量、扭振……），
-超过限制会显示超在哪、超多少。
+超过限制会显示超在哪、超多少。![发动机设计页面](https://github.com/AAA-driver-Yang/JetForge/blob/main/photo/%E5%8F%91%E5%8A%A8%E6%9C%BA%E8%AE%BE%E8%AE%A1.png)
 
 风扇、压气机、涡轮的级数与叶尖直径都可以深度自定义。
+并且可以根据设计求解推力-高度-速度热力图![热力图](https://github.com/AAA-driver-Yang/JetForge/blob/main/photo/%E6%8E%A8%E5%8A%9B%E7%83%AD%E5%8A%9B%E5%9B%BE.png)
 
 **独立的进气道零件**
-进气道是一个**单独的零件**，有自己的编辑面板，不是发动机的一个数字：
+进气道是一个**单独的零件**，有自己的编辑面板，不是发动机的一个数字：![自定义进气道](https://github.com/AAA-driver-Yang/JetForge/blob/main/photo/%E5%80%BE%E6%96%9C%E8%BF%9B%E6%B0%94%E9%81%93.png)
 
 * 型线编辑器：每个截面能沿轴向移动、改宽高、改中心偏移；
 * **截面倾角**：拖某一段边缘那颗点横着拖，这一圈就斜过来——能做出 F-15 那种斜切进气口；
@@ -36,7 +37,10 @@ JetForge 反过来：它问你级数、叶尖直径、轴的布置、进气道�
 另外算一阶柔性：静扭角和箱体本体的扭振频率，太软会报警。
 
 **设计向导**
-给它用途、设计马赫、高度、推力，它给你一台初稿装到零件上，参数来源一条条写清楚（为什么这么选级数、为什么这么大直径）。
+给它用途、设计马赫、高度、推力，它给你一台初稿装到零件上，参数来源一条条写清楚（为什么这么选级数、为什么这么大直径）。![](https://github.com/AAA-driver-Yang/JetForge/blob/main/photo/%E8%AE%BE%E8%AE%A1%E5%90%91%E5%AF%BC.png)
+
+**自适应尾焰**
+根据设计和运行状态自动求解的waterfall尾焰![尾焰](https://github.com/AAA-driver-Yang/JetForge/blob/main/photo/waterfall.png)
 
 **试车台与剖视**
 在试车台上把整台机器从慢车推到最大，看各站位的温度压力流量；剖视能看到内部剖面。
@@ -51,9 +55,9 @@ JetForge 反过来：它问你级数、叶尖直径、轴的布置、进气道�
 
 ### 需要什么
 
-* **ModuleManager**
-* **Waterfall**（尾焰）
-* **RocketSoundEnhancement**（声音）
+* [ **ModuleManager**](https://github.com/sarbian/ModuleManager)
+* [ **Waterfall**（尾焰）](https://github.com/KSPModStewards/Waterfall)
+* [**RocketSoundEnhancement**](https://github.com/KSPModStewards/RocketSoundEnhancement)
 
 三个都是常见前置，CKAN 里能一起装。
 
@@ -83,13 +87,6 @@ JetForge 反过来：它问你级数、叶尖直径、轴的布置、进气道�
 源码与问题跟踪：https://github.com/AAA-driver-Yang/JetForge
 
 ### 更新日志
-
-**1.0.1 — 供气与过载的修正**
-
-* 多件 / 对称件的进气道流量改为各件相加，上限只听发动机进口面
-* 同款、镜像件改一件，外形跟着重建
-* 零件说明里"供气"与"进口面最多收"两个数同源
-* 过载不再弄坏发动机（只记峰值）
 
 **1.0.0 — 首个公开版本**
 
@@ -199,13 +196,6 @@ When reporting a problem, please attach both logs:
 Source and issue tracker: https://github.com/AAA-driver-Yang/JetForge
 
 ### Changelog
-
-**1.0.1 — supply and overload fixes**
-
-* Several or symmetric intakes now add their flow; only the engine face caps it
-* Editing one of identical or mirrored intakes rebuilds their meshes too
-* Supply and "most the engine face can take" now come from the same number
-* Overload no longer damages the engine (peak is still recorded)
 
 **1.0.0 — first public release**
 
