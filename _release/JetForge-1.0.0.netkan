@@ -29,8 +29,8 @@
   ],
   "version": "1.0.0",
   "download": "https://example.invalid/JetForge-1.0.0.zip",
-  "download_size": 11045102,
+  "download_size": 11045185,
   "download_hash": {
-    "sha256": "792a166c232800b5cef25c23a78b380e70f86c6c3a5109710680665ab73f01e6"
+    "sha256": "dc7b2bdbdc25e4dd38eefb643b2f63b670cd538e55b250e9beae749db89e45a8"
   }
 }

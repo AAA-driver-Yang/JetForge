@@ -26,6 +26,9 @@ B 段只能人做（截图、英文审校、真地址与 stable、CKAN 提交）
 | `JetForge.Test/` | 回归工程（段数见 `dotnet run` 末行，不引用 UnityEngine） |
 | `tools/` | 十九道闸门、贴图/音效生成器、发布打包与备份脚本（分类见 [`tools/README.md`](tools/README.md)） |
 | `proto/` | 最早的 Python 原型（移植到 C# 之前的参照实现，不参与构建） |
+| `screenshots/` | 界面截图（SpaceDock 介绍栏直接引这里的 raw 地址） |
+
+发布相关另有两份：`RELEASE.md`（发布清单，A 段自动、B 段人工）与 `SPACEDOCK.md`（商店页介绍底稿）。
 
 ## 构建
 

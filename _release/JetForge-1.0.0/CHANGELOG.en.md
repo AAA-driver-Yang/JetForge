@@ -20,8 +20,7 @@ This file records only what a player can notice. Item-by-item technical detail l
 - **Real shock model**: supersonic intake recovery is solved stage by stage through normal shock /
   θ-β-M oblique shock / cone shock. Past the maximum deflection angle for that Mach number the intake is
   reported as unstarted (shock detached) and recovery falls back to a normal shock.
-- **Stock intake compatibility**: stock intakes on the same vessel can feed a JetForge engine; with two or
-  more, flow is taken as the largest of their individual demands instead of being counted twice.
+- **Stock intake compatibility**: stock intakes on the same vessel can feed a JetForge engine.
 - **Variable centre cone**: pushes forward with Mach number at supersonic speed and narrows the throat
   (can be switched off).
 - **Cone tip position is adjustable**: the cone is no longer nailed behind the lip - template outlines get a
@@ -87,6 +86,17 @@ This file records only what a player can notice. Item-by-item technical detail l
   was required. There is now a "tilt side/top [-5][+5]" button row for slanted inlets.
 
 ### Fixed
+- **Symmetry-placed intakes were counted as one**: two intakes that can each swallow 30 kg/s feeding an
+  engine that wants 70 used to have their combined flow quietly clamped back to the largest single one, so
+  the panel read 120 kg/s supplied while the engine only ever got 30 and never reached rated thrust. Multiple
+  intakes now add up, and **the only ceiling is the engine face**: fitting extras never invents thrust, but
+  they no longer count for nothing either.
+- **Editing one of a mirrored/matching set of intakes left the others behind**: the window copied the new
+  numbers to the sibling parts but skipped the "rebuild the mesh" step, so fields and readouts changed while
+  the part still looked old. Fixed.
+- **Overload damage removed at the player's request**: pulling g no longer accumulates bearing strain and
+  never cuts thrust; only surge, burn-through and overspeed can destroy an engine. The "G damage" and
+  "reinforcement" options are gone with it (those keys in old saves are ignored and not written back).
 - **A bigger intake no longer means more thrust**: the engine used to take whatever air the part's
   throat could pass, so a huge intake shape made a 2 t engine swallow over 7000 kg/s and multiply its
   thrust (a player measured 344 kN at 7787 kg/s). The engine face is now a hard cap: the face is only so
