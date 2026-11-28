@@ -26,8 +26,8 @@
 | `check_dead_methods.py` | 没有只声明不调用的方法（反射入口在白名单里） |
 | `check_pack_notes.py` | 随包文件里没留开发笔记（`GameData/**` 会原样发给玩家） |
 | `check_pack_vs_deploy.py` | 打出来的 zip 与自检测的那份部署目录逐字节一致 |
-| `check_release.py` | 版本三处一致、贴图引用齐、无调试残留、netkan 元数据说得通 |
-| `check_readiness.py` | 发布就绪 A 段（许可/README/更新日志/元数据口径） |
+| `check_release.py` | 版本一致、贴图引用齐、无调试残留、发布说明的哈希对得上 |
+| `check_readiness.py` | 发布就绪 A 段（许可/README/更新日志/文档口径） |
 
 最后三条（`pack_vs_deploy` / `release` / `readiness`）在流水线第 5 步跑——它们查的是刚打出来的那个包，
 不是源码。
@@ -42,7 +42,7 @@
 
 ## 3. 打包与备份
 
-- `make_release.sh`：出 `_release/JetForge-<version>/` 与同名 `.zip`、`.netkan`，校验三处版本一致。
+- `make_release.sh`：出 `_release/JetForge-<version>/` 与同名 `.zip`，校验三处版本一致。
 - `make_backup.sh` / `make_backup_zip.py`：作者本机的存档备份，与发布无关。
 - `tidy_loc.py`：本地化词条排序整理。
 

@@ -3,13 +3,11 @@
 参数化喷气发动机与进气道的 KSP 插件。**画几何 → 算热力**：先定尺寸、级数、截面与流道，
 再由部件网络算出推力、耗油率、各轴转速与工作点，而不是"填性能反推曲线"。
 
-介绍文档[`SPACEDOCK.md`](SPACEDOCK.md)
-
 玩家文档在 [`INSTALL.md`](INSTALL.md)（安装与首次使用，英文版 [`INSTALL.en.md`](INSTALL.en.md)）
 与 `GameData/JetForge/README.md`（随发布包一起走）。逐项技术记录在 `docs/phase2-mod.md`（不在仓库里，只随开发进行）。
 
 要发布？照 [`RELEASE.md`](RELEASE.md) 的清单走：A 段一条命令自动查（`python tools/check_readiness.py`），
-B 段只能人做（截图、英文审校、真地址与 stable、CKAN 提交）。
+B 段只能人做（截图、英文审校、商店页填写）。
 
 ## 目录
 
@@ -76,7 +74,7 @@ GitHub Actions 跑的是 `--ci` 那一档（[`.github/workflows/ci.yml`](.github
 （`Assembly-CSharp` / `UnityEngine` / `UnityEngine.CoreModule` / `UnityEngine.AudioModule`）。
 Waterfall 与 RocketSoundEnhancement 是**硬依赖**：羽流只剩 Waterfall 一条路（自绘加法锥已删），
 干态声音交给 RSE。少一样不会崩，但玩家会看到「发动机在转却不出火」或「一点声都没有」——
-所以 `Core/Dependencies.cs` 在启动时就报一次缺什么，`netkan` 里也写成了 `depends`。
+所以 `Core/Dependencies.cs` 在启动时就报一次缺什么（三条依赖也写在随包 README 与安装说明里）。
 
 ## 回归与自检
 
@@ -95,11 +93,11 @@ tools/make_release.sh          # 产出 _release/JetForge-<version>.zip 与解�
 ```
 
 脚本会校验三处版本号一致（`Core/Version.cs`、`Properties/AssemblyInfo.cs`、`JetForge.version`），
-不一致直接退出，避免打出 CKAN 拒装的包。
+不一致直接退出，避免打出玩家装回家才发现版本对不上的包。
 
-产出的 `.zip` 旁边还会生成一份 `JetForge-<version>.netkan`：里面已经填好包的 sha256 与文件名，
-只差一个 `download` 地址（填你上传后的直链，或删掉这一行改用 `$kref`）。
-这份元数据是给 CKAN 索引用的，字段都写在文件里，不需要再另写一份。
+产物只有两样：解包目录 `_release/JetForge-<version>/` 与同名 `.zip`。
+发布说明 `_release/GITHUB_RELEASE-<version>.md` 写好后，重出包时脚本会把里面的 sha256
+改成这一版的（说明不会自己长出来，`check_release.py` 会在缺了它时红）。
 
 ## 许可
 

@@ -59,7 +59,7 @@ def check_license():
         fail("缺 LICENSE")
         return
     if "MIT License" not in text and "MIT" not in text.split("\n")[0]:
-        fail("LICENSE 不是 MIT 的正文（发布包里的许可要和 netkan 的 license 字段一致）")
+        fail("LICENSE 不是 MIT 的正文（玩家看到的许可与 README 里写的必须是同一份）")
     # 版权行是唯一能证明"这份代码归谁"的东西，空着等于没有许可。
     if not re.search(r"Copyright\s*\(c\)\s*\d{4}", text, re.I):
         fail("LICENSE 里没有版权行（Copyright (c) 年份）")
@@ -203,23 +203,6 @@ def check_changelog_entry(ver):
 # ---------- --public：上线项 ----------
 
 def check_public(ver):
-    # 出包脚本用的是三段号（JetForge-1.0.0.zip），`.version` 里是四段（AssemblyVersion 要四段）。
-    three = ".".join((ver or "1.0.0").split(".")[:3])
-    net = read("_release/JetForge-%s.netkan" % three)
-    if net is None:
-        # 还没出包：这在开发期很正常，但 --public 是要发布，必须出过包。
-        fail("没找到 _release/JetForge-%s.netkan：先跑 tools/make_release.sh" % three)
-        return
-    dl = re.search(r'"download"\s*:\s*"([^"]*)"', net)
-    url = dl.group(1) if dl else ""
-    if not url or "example.invalid" in url or "localhost" in url:
-        fail("download 还是占位地址（%s）：玩家点安装会拿到 404" % (url or "空"))
-    if not url.lower().startswith("https://"):
-        fail("download 不是 https：CKAN 会拒收")
-    status = re.search(r'"release_status"\s*:\s*"([^"]*)"', net)
-    if not status or status.group(1) != "stable":
-        fail("release_status 还是 %s：正式发布要 stable（先 testing 试过也可以）"
-             % (status.group(1) if status else "缺"))
     shots = [n for n in os.listdir(ROOT) if n.lower() == "screenshots"]
     if not shots:
         fail("仓里没有 screenshots/ 目录：SpaceDock 页面上没有截图，玩家不会点下载")
@@ -236,8 +219,6 @@ def main():
     cr.check_parts()
     cr.check_engine_limits()
     cr.check_ksp_version()
-    cr.check_dependencies()
-    cr.check_netkan_meta()
     cr.check_doc_versions()
     cr.check_doc_pairs()
     cr.check_sources()
@@ -255,7 +236,7 @@ def main():
         check_public(ver)
         print("==")
         print("B 段只能人做的事（勾在 RELEASE.md 里）：截图、英文审校、英文环境走一遍、")
-        print("论坛描述、CKAN PR、发布后从 CKAN 装一遍再自检。这些闸门查不出来，别当它们不存在。")
+        print("论坛描述、商店页、发布后从发布包装一遍再自检。这些闸门查不出来，别当它们不存在。")
 
     for n in NOTES:
         print("注意 %s" % n)
@@ -264,7 +245,7 @@ def main():
         for f in FAILS:
             print("  - " + f)
         return 1
-    print("OK   发布就绪（A 段）：版本 %s｜许可/README/更新日志齐｜元数据与文档口径一致" % (ver or "?"))
+    print("OK   发布就绪（A 段）：版本 %s｜许可/README/更新日志齐｜.version 与文档口径一致" % (ver or "?"))
     return 0
 
 

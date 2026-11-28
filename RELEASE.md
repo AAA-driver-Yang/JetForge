@@ -15,9 +15,8 @@ bash tools/run_tests.sh                    # 六步流水线（含 A 段）
 
 | 项 | 判据 | 谁在查 |
 | --- | --- | --- |
-| 版本号三处一致 | `AssemblyInfo.cs` / `JetForge.version` / netkan | `check_release.check_version` |
-| 兼容区间是承诺过的 | `.version` 的 MIN ≤ 目标 ≤ MAX，netkan 区间盖住它，`INSTALL.md` 写的与之逐字一致 | `check_ksp_version` / `check_doc_versions` |
-| 元数据能拿去提交 | 英文 abstract、description、homepage、release_status 合规 | `check_netkan_meta` |
+| 版本号两处一致 | `AssemblyInfo.cs` / `JetForge.version`（`Core/Version.cs` 是唯一手写源头） | `check_release.check_version` |
+| 兼容区间是承诺过的 | `.version` 的 MIN ≤ 目标 ≤ MAX，`INSTALL.md` 写的与之逐字一致 | `check_ksp_version` / `check_doc_versions` |
 | 中英文档成对且版本条目相等 | `INSTALL` / `CHANGELOG` 两份 `.md` 与 `.en.md` | `check_doc_pairs` |
 | 零件 cfg 引用的模型与贴图都在包里 | 逐条 `model=` / `texture=` 存在 | `check_release.check_parts` |
 | 包里没有开发垃圾 | 集合与磁盘一致，`obj/`、`.pyc`、`*.log` 一律拒收 | `check_release.check_zip` |
@@ -33,19 +32,10 @@ bash tools/run_tests.sh                    # 六步流水线（含 A 段）
 - [ ] **截图**：VAB 里的设计器、飞行中的发动机与尾焰、剖视页各一张。
       SpaceDock 页面上没有截图，玩家不会点下载。仓里没有 `screenshots/` 目录，
       `--public` 会报这一条。
-- [ ] **真实下载地址**：两种来路挑一种，都能让 `release_status` 变成 stable，但只挑一种：
-      - **包挂在 GitHub Release 上（推荐）**：写一行 `$kref`，版本号/地址/大小/哈希全由 CKAN 的
-        机器人从 Release 里取，手写的版本号就不会和 Release 里的对不上：
-        ```
-        JETFORGE_NETKAN_KREF="你的用户名/JetForge" JETFORGE_RELEASE_STATUS=stable bash tools/make_release.sh
-        ```
-        这条路要求 `.version` 里的 URL 与仓库地址一致（`check_release` 会拦），
-        Release 的 tag 建议就用 `v<版本号>`。
-      - **自己传包（SpaceDock / 直链）**：
-        ```
-        JETFORGE_RELEASE_STATUS=stable JETFORGE_DOWNLOAD=https://… bash tools/make_release.sh
-        ```
-      状态与地址一起改，避免"地址改了状态忘了"；`JETFORGE_HOMEPAGE` 可单独覆盖主页。
+- [ ] **上传包并填写商店页**：把 `_release/JetForge-<version>.zip` 传到 SpaceDock（mod 4872）的
+      Edit 页，版本号与兼容区间照 `.version` 填（`1.12.0 – 1.12.99`），许可选 MIT。
+      页面上的图用 `cdn.jsdelivr.net/gh/AAA-driver-Yang/JetForge@main/screenshots/`（§277：
+      `raw.githubusercontent.com` 在部分网络里取不到，玩家看到的是破图）。
 - [ ] **英文审校**：`INSTALL.en.md` / `CHANGELOG.en.md` 与英文界面都是我照着中文写的，
       没有人以英语为母语读过一遍。闸门只能保证结构一致（键齐、条目齐、占位符齐），
       保证不了读起来像人话。
@@ -58,9 +48,8 @@ bash tools/run_tests.sh                    # 六步流水线（含 A 段）
 - [ ] **老存档的提示看一眼**：用更早版本存的零件（或把存档里 `design` 节点的 `schema` 那行删掉）
        进 VAB，悬停发动机零件说明，确认多出「存档版本：…」那一行、且同版本存档没有这一行。
        `GetInfo()` 只在游戏里由引擎调用，自检不实例化零件，闸门看不见它——§265 只有形状被钉住。
-- [ ] **论坛/SpaceDock 描述**：沿用 netkan 的 abstract/description，但要配图与版本表。
-- [ ] **CKAN 提交**：往 `KSP-CKAN/CKAN-meta` 提 PR，附上已上线的 netkan。
-- [ ] **发布后一小时自检**：从 CKAN 装一遍（不要用手里的开发目录），确认游戏能启动、
+- [ ] **论坛/SpaceDock 描述**：中文一份、英文摘要一份（README 里那段英文摘要可以直接用），要配图与版本表。
+- [ ] **发布后一小时自检**：从发布包装一遍（不要用手里的开发目录），确认游戏能启动、
       零件出现在列表里、`KSP.log` 里没有 `[JetForge]` 的红色异常。
 
 ## 已知的模型边界（可以发布，但不许吹）

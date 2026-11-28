@@ -58,7 +58,7 @@ sound are all recomputed.
 ## Known trade-offs
 
 These are **model boundaries**, not bugs waiting to be fixed. For the source, assumptions and error
-grade of each, open the model accuracy ledger in the designer readout: 22 entries graded A to D,
+grade of each, open the model accuracy ledger in the designer readout: 23 entries graded A to D,
 with grade D saying plainly "no real-engine data, relative comparison only".
 
 - The compressor map is **synthetic** (design point plus three constants); surge margin only compares

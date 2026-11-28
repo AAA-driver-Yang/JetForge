@@ -2,8 +2,8 @@
 
 它检查的四类东西，都是**只有在别人机器上才会炸**的：
 
-1. 版本号三处一致（AssemblyInfo.cs / JetForge.version / netkan 里的版本）——
-   不一致 CKAN 会拒装，或者装上之后装着旧版。
+1. 版本号一致（AssemblyInfo.cs / JetForge.version）——
+   不一致的话 AVC 报的版本和玩家装上的对不上。
 2. 零件 cfg 引用的模型与贴图真的在包里 —— 缺一张就整件变白模，而且日志里
    只有一行 warning，玩家看到的是"这 mod 的东西是白的"。
 3. 源码里没有调试残留（JF_PROBE 探针接线、Console.WriteLine）—— 探针一旦漏进发布包，
@@ -53,7 +53,7 @@ def check_version():
         fail("找不到 KSP/Source/Properties/AssemblyInfo.cs")
         return None
     if not os.path.exists(ver):
-        fail("找不到 GameData/JetForge/JetForge.version（CKAN/AVC 靠它认版本）")
+        fail("找不到 GameData/JetForge/JetForge.version（AVC 靠它认版本）")
         return None
     m = re.search(r'AssemblyVersion\("([^"]+)"\)', read(asm))
     if not m:
@@ -73,90 +73,7 @@ def check_version():
         str(vj.get("VERSION", {}).get("PATCH", ""))
     if avc != mv:
         fail("版本号不一致：AssemblyInfo=%s，JetForge.version=%s" % (avc, mv))
-    netkans = [p for p in os.listdir(RELEASE) if p.endswith(".netkan")] if os.path.isdir(RELEASE) else []
-    for n in netkans:
-        mm = re.search(r'"version"\s*:\s*"([^"]+)"', read(os.path.join(RELEASE, n)))
-        if mm and mm.group(1) != avc:
-            note("netkan（%s）写的是 %s，源码是 %s —— 出包脚本会重写它，只提醒" % (n, mm.group(1), av))
     return av
-
-
-def check_dependencies():
-    """netkan 的 depends 必须跟代码里的硬依赖清单一致。
-
-    代码里 `Core/Dependencies.cs` 声明了 Waterfall 与 RocketSoundEnhancement 是硬依赖
-    （没有就没有羽流、没有干态声音），而所有 cfg 补丁都是 `@PART` 形式，
-    没装 ModuleManager 一句都不生效。这三样只写在 README 里没用——CKAN 安装时只读 netkan。
-    """
-    src = os.path.join(SOURCE, "Core", "Dependencies.cs")
-    if not os.path.exists(src):
-        fail("找不到 KSP/Source/Core/Dependencies.cs")
-        return
-    names = set(re.findall(r'Dll\s*=\s*"([^"]+)"', read(src)))
-    if not names:
-        fail("Dependencies.cs 里没解析出任何硬依赖名字")
-        return
-    netkans = sorted(p for p in os.listdir(RELEASE) if p.endswith(".netkan")) if os.path.isdir(RELEASE) else []
-    if not netkans:
-        note("还没有 netkan（没出过包），依赖声明只查了代码侧")
-        return
-    want = names | set(["ModuleManager"])
-    for n in netkans:
-        try:
-            meta = json.loads(read(os.path.join(RELEASE, n)))
-        except Exception as e:
-            fail("%s 不是合法 JSON：%s" % (n, e))
-            continue
-        have = set(d["name"] for d in meta.get("depends", [])
-                   if isinstance(d, dict) and "name" in d)
-        missing = sorted(want - have)
-        if missing:
-            fail("%s 的 depends 少了 %s（玩家装完会没有羽流/声音、cfg 补丁也不生效）"
-                 % (n, "、".join(missing)))
-
-
-def check_netkan_meta():
-    """netkan 的玩家可见字段得能拿得出手：英文摘要、真地址、标签。
-
-    这几条都是"提交上去会被退回来但不告诉你为什么"的东西：
-      - abstract 是中文：CKAN 索引用英文，搜索也不做中文分词，玩家在列表里看到方块；
-      - release_status = stable 而 download 是 example.invalid：CKAN 会当真索引给玩家装，
-        然后 404 —— 本地出包时 zip 还躺在 _release/ 里，就该标 development；
-      - 没有 description/homepage：SpaceDock 页面上只有一行摘要，玩家不知道这 mod 干什么。
-    """
-    netkans = sorted(p for p in os.listdir(RELEASE) if p.endswith(".netkan")) if os.path.isdir(RELEASE) else []
-    if not netkans:
-        note("还没有 netkan（没出过包），元数据只查到这里")
-        return
-    for n in netkans:
-        try:
-            meta = json.loads(read(os.path.join(RELEASE, n)))
-        except Exception:
-            continue                      # JSON 坏掉由 check_dependencies 报，不重复喊
-        abstract = meta.get("abstract", "")
-        if re.search(r"[\u4e00-\u9fff]", abstract):
-            fail("%s 的 abstract 是中文（CKAN 的索引与搜索都是英文，玩家会看到方块）" % n)
-        status = meta.get("release_status", "")
-        if status not in ("development", "testing", "stable"):
-            fail("%s 的 release_status 是 %r，只能是 development/testing/stable" % (n, status))
-        # 包挂在 GitHub Release 上时，版本/地址/大小/哈希都由 CKAN 的机器人从 Release 取
-        # （"$kref": "#/ckan/github/<owner>/<repo>"）。这种 netkan 里本来就没有 download 字段，
-        # 拿"download 是占位地址"去判它会误杀——所以要认这条来路。
-        kref = meta.get("$kref", "")
-        by_kref = isinstance(kref, str) and kref.startswith("#/ckan/github/") and len(kref.split("/")) >= 5
-        download = meta.get("download", "")
-        placeholder = ("example.invalid" in download) or ("localhost" in download) or not download.startswith("https://")
-        if by_kref:
-            note("%s 用 $kref 交给 CKAN 机器人取版本与地址（%s）" % (n, kref))
-            placeholder = False
-        if status == "stable" and placeholder:
-            fail("%s 标了 stable，但 download 还是占位地址 %s —— 玩家会装到一个 404" % (n, download))
-        if status != "stable" and not placeholder:
-            note("%s 的 download 已经是真地址（%s），可以考虑把 release_status 改成 stable" % (n, download))
-        if not meta.get("description"):
-            fail("%s 没有 description（SpaceDock 页面上玩家只看得到一行摘要）" % n)
-        if not meta.get("homepage"):
-            fail("%s 没有 homepage（玩家从 CKAN 里点不出去）" % n)
 
 
 def check_parts():
@@ -208,7 +125,7 @@ def check_engine_limits():
 def check_ksp_version():
     """兼容区间必须是「真跑过的」，而且两份元数据得自洽。
 
-    这里拦的是一种特别贵的话：`.version` / netkan 里写一个没人验过的兼容下限
+    这里拦的是一种特别贵的话：`.version` 里写一个没人验过的兼容下限
     （曾经是 1.8.0，实际只在本机 1.12.4 上跑过自检）。许诺不存在的东西，
     玩家装上撞 `MissingMethodException`，然后把"装完是坏的"算在模组头上。
 
@@ -239,18 +156,6 @@ def check_ksp_version():
     if hi is not None and hi < ver:
         fail("JetForge.version 的 KSP_VERSION_MAX %s 低于 KSP_VERSION %s" % (hi, ver))
 
-    # netkan 里的区间也得盖住 .version 的目标版本，否则 CKAN 与 AVC 各说各话
-    if os.path.isdir(RELEASE):
-        for n in sorted(x for x in os.listdir(RELEASE) if x.endswith(".netkan")):
-            t = read(os.path.join(RELEASE, n))
-            mn = re.search(r'"ksp_version_min"\s*:\s*"([0-9.]+)"', t)
-            mx = re.search(r'"ksp_version_max"\s*:\s*"([0-9.]+)"', t)
-            vstr = "%d.%d.%d" % ver
-            if mn and tuple(int(x) for x in mn.group(1).split(".")) > ver:
-                fail("%s 的 ksp_version_min %s 高于 .version 的 %s" % (n, mn.group(1), vstr))
-            if mx and tuple(int(x) for x in mx.group(1).split(".")) < ver:
-                fail("%s 的 ksp_version_max %s 低于 .version 的 %s" % (n, mx.group(1), vstr))
-
     # 本机实测版本（KSP.log 头一行带版本号）：只提醒，不拦
     log = os.path.join(os.path.dirname(ROOT), "Kerbal Space Program", "KSP.log")
     if os.path.exists(log):
@@ -261,10 +166,10 @@ def check_ksp_version():
 
 
 def check_doc_versions():
-    """玩家文档里写的兼容区间与主页，必须和两份元数据一致。
+    """玩家文档里写的兼容区间，必须和 `.version` 一致。
 
-    文档是手写的，元数据是脚本生成的 —— 手写的那份会漂。实测漂过一次：
-    `INSTALL.md` 写着「1.8.0 – 1.12.99（自检在 1.12.5 上）」，而 `.version` 与 netkan
+    文档是手写的，`.version` 是游戏读的 —— 手写的那份会漂。实测漂过一次：
+    `INSTALL.md` 写着「1.8.0 – 1.12.99（自检在 1.12.5 上）」，而 `.version`
     早就统一到 1.12.0–1.12.99 / 本机 1.12.4。玩家照着文档去装 1.8.0，装不上会来问；
     而这类错**编译不报、闸门不报、只有人读到才发现**。
     """
@@ -296,19 +201,6 @@ def check_doc_versions():
                  % (m.group(0), lo, hi))
     else:
         fail("缺 INSTALL.md")
-
-    url = (vj.get("URL") or "").rstrip("/")
-    if os.path.isdir(RELEASE):
-        for n in sorted(x for x in os.listdir(RELEASE) if x.endswith(".netkan")):
-            try:
-                meta = json.loads(read(os.path.join(RELEASE, n)))
-            except Exception:
-                continue
-            home = (meta.get("homepage") or "").rstrip("/")
-            if home and url and home.lower() != url.lower():
-                fail("%s 的 homepage（%s）与 .version 的 URL（%s）不是同一个仓库"
-                     % (n, home, url))
-
 
 def check_doc_pairs():
     """两份语言的文档必须成对存在，且 CHANGELOG 的版本条目不许多不许少。
@@ -531,8 +423,6 @@ def main():
     check_parts()
     check_engine_limits()
     check_ksp_version()
-    check_dependencies()
-    check_netkan_meta()
     check_doc_versions()
     check_doc_pairs()
     check_sources()

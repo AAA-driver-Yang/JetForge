@@ -88,7 +88,7 @@ This file records only what a player can notice. Item-by-item technical detail l
 - **Per-stage surge margin**: not just one number for the whole compressor — it reports which stage is
   tightest (front stages carry more load, rear stages less, and variable stators flatten that out); the
   other common trap is moving towards choke when you pull the throttle back.
-- **Model accuracy ledger**: 22 models, each with its source, assumptions, error and limits of
+- **Model accuracy ledger**: 23 models, each with its source, assumptions, error and limits of
   applicability, graded A to D. Grade D says plainly "no real-engine data, relative comparison only" —
   better to know what is unknown than to pretend.
 - **Checks sorted by severity**: the one thing you should fix first is always on the first line; passing
